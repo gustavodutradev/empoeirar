@@ -3,15 +3,35 @@ import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
 
 /**
+ * Monta os headers da request a serem repassados aos Server Components:
+ * cookies atualizados (caso a sessao tenha sido renovada) + os headers
+ * customizados que o middleware injetou (x-nonce e a CSP), sem os quais o
+ * Next nao consegue aplicar o nonce aos scripts dele.
+ */
+function forwardHeaders(request: NextRequest, injected: Headers): Headers {
+  const headers = new Headers(request.headers);
+  const nonce = injected.get("x-nonce");
+  const csp = injected.get("content-security-policy");
+  if (nonce) headers.set("x-nonce", nonce);
+  if (csp) headers.set("content-security-policy", csp);
+  return headers;
+}
+
+/**
  * Renova a sessao do Supabase a cada request, no middleware do Next.
  *
  * Por que isso existe: tokens de acesso expiram. O middleware intercepta a
  * request, revalida/renova o token e reescreve os cookies (httpOnly/Secure/
  * SameSite) tanto na request quanto na response, pra que Server Components
  * downstream leiam uma sessao sempre fresca.
+ *
+ * `injectedHeaders` carrega o x-nonce e a CSP gerados no middleware; sao
+ * preservados em toda NextResponse.next para chegarem intactos ao Next.
  */
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+export async function updateSession(request: NextRequest, injectedHeaders: Headers) {
+  let supabaseResponse = NextResponse.next({
+    request: { headers: forwardHeaders(request, injectedHeaders) },
+  });
 
   const supabase = createServerClient(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -25,7 +45,9 @@ export async function updateSession(request: NextRequest) {
           for (const { name, value } of cookiesToSet) {
             request.cookies.set(name, value);
           }
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({
+            request: { headers: forwardHeaders(request, injectedHeaders) },
+          });
           for (const { name, value, options } of cookiesToSet) {
             supabaseResponse.cookies.set(name, value, options);
           }
@@ -44,8 +66,5 @@ export async function updateSession(request: NextRequest) {
   // rota for protegida (checkout/admin), redirecionar para /login. Deixado
   // para quando essas rotas existirem, pra nao redirecionar no vazio.
 
-  // IMPORTANTE: retorne o supabaseResponse como esta. Se for criar uma outra
-  // NextResponse, copie os cookies dele (supabaseResponse.cookies) para nao
-  // dessincronizar a sessao do browser.
   return supabaseResponse;
 }
