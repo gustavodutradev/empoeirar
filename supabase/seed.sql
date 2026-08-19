@@ -1,10 +1,11 @@
 -- =============================================================================
 -- Seed da Fase 1 — Empoeirar
 -- Idempotente (on conflict no slug): rodar `supabase db reset` nao duplica.
+-- Produtos extraidos do catalogo 2026. weight_grams = null ate termos os
+-- pesos reais (frete = Fase 2). Dimensoes = maior peca de cada conjunto.
 -- =============================================================================
 
 -- ---- Categorias -------------------------------------------------------------
--- A ultima e o funil de moldes personalizados (is_custom_funnel = true).
 insert into public.category (name, slug, description, sort_order, is_custom_funnel) values
   ('Conjuntos Orgânicos',          'conjuntos-organicos',  'Conjuntos de moldes de formas orgânicas, com nomes em homenagem ao Vale do Jequitinhonha.', 1, false),
   ('Moldes Geométricos',           'moldes-geometricos',   'Círculos, quadrados, retângulos e elipses, em conjuntos do PP ao GG.',                      2, false),
@@ -14,75 +15,61 @@ insert into public.category (name, slug, description, sort_order, is_custom_funn
   ('Um molde para chamar de seu!', 'molde-personalizado',  'Desenhe, fotografe ou imagine: transformamos sua ideia num molde único e exclusivo.',       6, true)
 on conflict (slug) do nothing;
 
--- ---- Produtos de exemplo (2 por categoria, extraidos do catalogo 2026) -------
--- Precos em centavos. Pesos e alturas sao ESTIMATIVAS ate termos os dados reais
--- (frete = Fase 2). Dimensoes em mm, a partir da maior peca de cada conjunto.
+-- ---- Produtos (catalogo 2026, gerado). weight_grams = null (frete = Fase 2). ----
 insert into public.product
   (category_id, name, slug, description, price_cents, status, stock,
    weight_grams, length_mm, width_mm, height_mm, material_care)
 values
-  -- Conjuntos Orgânicos
-  ((select id from public.category where slug = 'conjuntos-organicos'),
-   'Conjunto Turmalina', 'conjunto-turmalina',
-   'Conjunto de três moldes orgânicos (P, M e G) com puxadores entalhados que facilitam o desmolde sem marcar a borda da peça. O nome é uma homenagem ao Vale do Jequitinhonha, referência em cerâmica artesanal.',
-   14900, 'published', 5, 700, 280, 265, 18,
-   'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
-
-  ((select id from public.category where slug = 'conjuntos-organicos'),
-   'Conjunto Padre Paraíso', 'conjunto-padre-paraiso',
-   'Conjunto de cinco moldes orgânicos (do PP ao GG) para compor pratos e travessas em vários tamanhos, com puxadores entalhados para um desmolde limpo. Nome em homenagem ao Vale do Jequitinhonha.',
-   23800, 'published', 4, 1200, 310, 310, 18,
-   'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
-
-  -- Moldes Geométricos
-  ((select id from public.category where slug = 'moldes-geometricos'),
-   'Círculos', 'circulos',
-   'Conjunto de cinco moldes circulares (de 14 a 38 cm) para pratos e bases perfeitamente redondos, do PP ao GG.',
-   23800, 'published', 6, 1300, 380, 380, 18,
-   'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
-
-  ((select id from public.category where slug = 'moldes-geometricos'),
-   'Quadrados', 'quadrados',
-   'Conjunto de cinco moldes quadrados (de 14 a 38 cm) para travessas e bases de linhas retas, do PP ao GG.',
-   23800, 'published', 6, 1300, 380, 380, 18,
-   'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
-
-  -- Moldes Lúdicos
-  ((select id from public.category where slug = 'moldes-ludicos'),
-   'Ovos', 'ovos',
-   'Trio de moldes em formato de ovo (P, M e G), ideais para pratinhos e petisqueiras — de Páscoa ou do dia a dia. Feitos à mão em MDF.',
-   14900, 'published', 8, 650, 260, 190, 18,
-   'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
-
-  ((select id from public.category where slug = 'moldes-ludicos'),
-   'Pizza', 'pizza',
-   'Molde em formato de fatia de pizza, em tamanho único, para peças divertidas e cheias de personalidade.',
-   5500, 'published', 10, 350, 230, 190, 18,
-   'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
-
-  -- Especiais
-  ((select id from public.category where slug = 'especiais'),
-   'Prato de Risoto', 'prato-de-risoto',
-   'Molde para prato de risoto com aba larga e centro fundo: diâmetro superior de 31 cm e 7,2 cm de altura. Para peças de mesa com presença.',
-   15000, 'published', 4, 800, 310, 310, 72,
-   'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
-
-  ((select id from public.category where slug = 'especiais'),
-   'Conjunto Sushi Arredondado', 'conjunto-sushi-arredondado',
-   'Conjunto de três moldes (P, M e G) para pratos de sushi com cantos arredondados, do petisco à travessa.',
-   14900, 'published', 5, 600, 330, 130, 18,
-   'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
-
-  -- Ferramentas
-  ((select id from public.category where slug = 'ferramentas'),
-   'Disco para Torno Inteiriço', 'disco-para-torno-inteirico',
-   'Disco de 31 cm em MDF naval (resistente à água), projetado para encaixar no torno sem folga que cause vibração nem aperto que dificulte a remoção. Preço por unidade; consulte valores para quantidades maiores.',
-   3500, 'published', 20, 250, 310, 310, 6,
-   'MDF naval, resistente à água. Seque após o uso e guarde em local ventilado.'),
-
-  ((select id from public.category where slug = 'ferramentas'),
-   'Régua Niveladora 6 mm (par)', 'regua-niveladora-6mm',
-   'Par de réguas niveladoras de 6 mm em MDF naval, para nivelar a espessura da placa de argila com precisão. 40 cm de comprimento.',
-   2500, 'published', 15, 120, 400, 60, 6,
-   'MDF naval, resistente à água. Seque após o uso e guarde em local ventilado.')
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Turmalina', 'conjunto-turmalina', 'Conjunto de três moldes orgânicos (P, M e G) com puxadores entalhados para desmoldar sem marcar a borda da peça.', 14900, 'published', 5, null, 280, 265, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Padre Paraíso', 'conjunto-padre-paraiso', 'Conjunto de cinco moldes orgânicos (do PP ao GG) para pratos e travessas em vários tamanhos, com puxadores entalhados.', 23800, 'published', 5, null, 310, 310, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Joaíma', 'conjunto-joaima', 'Conjunto de três moldes orgânicos (P, M e G) com puxadores entalhados para um desmolde limpo.', 14900, 'published', 5, null, 300, 200, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Caraí', 'conjunto-carai', 'Conjunto de cinco moldes orgânicos (do PP ao GG), do petisco à travessa, com puxadores entalhados.', 23800, 'published', 5, null, 275, 260, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Itaobim', 'conjunto-itaobim', 'Conjunto de três moldes orgânicos alongados (P, M e G), ideais para travessas.', 14900, 'published', 5, null, 300, 180, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Minas Novas', 'conjunto-minas-novas', 'Conjunto de três moldes orgânicos (P, M e G) com puxadores entalhados.', 14900, 'published', 5, null, 315, 185, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Itinga', 'conjunto-itinga', 'Conjunto de três moldes orgânicos arredondados (P, M e G).', 14900, 'published', 5, null, 310, 270, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Taiobeiras', 'conjunto-taiobeiras', 'Conjunto de três moldes orgânicos (P, M e G) com puxadores entalhados.', 14900, 'published', 5, null, 300, 190, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Araçuaí', 'conjunto-aracuai', 'Conjunto de três moldes orgânicos alongados (P, M e G).', 14900, 'published', 5, null, 300, 155, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'conjuntos-organicos'), 'Conjunto Pasmado', 'conjunto-pasmado', 'Conjunto de cinco moldes orgânicos (do PP ao GG), com puxadores entalhados.', 23800, 'published', 5, null, 310, 225, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-geometricos'), 'Círculos', 'circulos', 'Conjunto de cinco moldes circulares (de 14 a 38 cm) para pratos e bases perfeitamente redondos, do PP ao GG.', 23800, 'published', 5, null, 380, 380, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-geometricos'), 'Quadrados', 'quadrados', 'Conjunto de cinco moldes quadrados (de 14 a 38 cm) para travessas de linhas retas, do PP ao GG.', 23800, 'published', 5, null, 380, 380, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-geometricos'), 'Retângulos', 'retangulos', 'Conjunto de cinco moldes retangulares (de 14 a 38 cm de comprimento), do PP ao GG.', 23800, 'published', 5, null, 380, 130, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-geometricos'), 'Elipses', 'elipses', 'Conjunto de cinco moldes em elipse (do PP ao GG) para pratos e travessas ovais.', 23800, 'published', 5, null, 325, 175, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Pães de Forma', 'paes-de-forma', 'Conjunto de dois moldes (P e G) em formato de pão de forma, para peças cheias de charme.', 10800, 'published', 5, null, 230, 215, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Pizza', 'pizza', 'Molde em formato de fatia de pizza, em tamanho único.', 5500, 'published', 5, null, 230, 190, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Ovos', 'ovos', 'Trio de moldes em formato de ovo (P, M e G), ideais para pratinhos e petisqueiras.', 14900, 'published', 5, null, 260, 190, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Ovo Frito Com Gema', 'ovo-frito-com-gema', 'Molde divertido em formato de ovo frito com gema, em tamanho único.', 6500, 'published', 5, null, 245, 200, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Banana', 'banana', 'Molde em formato de banana, em tamanho único.', 5500, 'published', 5, null, 250, 90, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Limão Siciliano', 'limao-siciliano', 'Molde em formato de limão siciliano, em tamanho único.', 5500, 'published', 5, null, 250, 195, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Maçã', 'maca', 'Molde em formato de maçã, em tamanho único.', 5500, 'published', 5, null, 250, 205, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Pêra', 'pera', 'Molde em formato de pêra, em tamanho único.', 5500, 'published', 5, null, 245, 200, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Melancia', 'melancia', 'Molde em formato de fatia de melancia, em tamanho único.', 5500, 'published', 5, null, 250, 115, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Todas as Frutas', 'todas-as-frutas', 'Conjunto com os cinco moldes de frutas: banana, limão siciliano, maçã, melancia e pêra.', 23800, 'published', 5, null, null, null, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Capivaras', 'capivaras', 'Conjunto de dois moldes (P e G) em formato de capivara.', 10800, 'published', 5, null, 245, 155, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Gatinhos', 'gatinhos', 'Conjunto de dois moldes (P e G) em formato de gatinho.', 10800, 'published', 5, null, 230, 195, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Conchas', 'conchas', 'Conjunto de três moldes (P, M e G) em formato de concha.', 14900, 'published', 5, null, 280, 255, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Ursinhos', 'ursinhos', 'Conjunto de dois moldes (P e G) em formato de ursinho.', 10800, 'published', 5, null, 230, 195, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Bonecos de Biscoito', 'bonecos-de-biscoito', 'Conjunto de três moldes (P, M e G) em formato de boneco de biscoito.', 14900, 'published', 5, null, 270, 210, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Estrelas', 'estrelas', 'Conjunto de três moldes (P, M e G) em formato de estrela.', 14900, 'published', 5, null, 310, 300, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Árvore de Natal', 'arvore-de-natal', 'Molde em formato de árvore de Natal, para peças de fim de ano.', 5500, 'published', 5, null, null, null, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Corações', 'coracoes', 'Conjunto de dois moldes (P e G) em formato de coração.', 10800, 'published', 5, null, 260, 220, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Luas', 'luas', 'Conjunto de dois moldes (P e G) em formato de lua.', 10800, 'published', 5, null, 250, 125, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Nuvens', 'nuvens', 'Conjunto de dois moldes em formato de nuvem.', 10800, 'published', 5, null, 260, 145, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Barcos', 'barcos', 'Conjunto de dois moldes (P e G) em formato de barco.', 10800, 'published', 5, null, 420, 220, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'moldes-ludicos'), 'Canoa', 'canoa', 'Molde alongado em formato de canoa, em tamanho único.', 5500, 'published', 5, null, 385, 90, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Conjunto Sushi Arredondado', 'conjunto-sushi-arredondado', 'Conjunto de três moldes (P, M e G) para pratos de sushi com cantos arredondados.', 14900, 'published', 5, null, 330, 130, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Conjunto Sushi Reto', 'conjunto-sushi-reto', 'Conjunto de três moldes (P, M e G) para pratos de sushi de linhas retas.', 14900, 'published', 5, null, 330, 130, 18, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Prato de Risoto', 'prato-de-risoto', 'Molde para prato de risoto com aba larga e centro fundo: 31 cm de diâmetro superior e 7,2 cm de altura.', 15000, 'published', 5, null, 310, 310, 72, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Copo Pequeno', 'copo-pequeno', 'Molde para copo pequeno (6 cm de diâmetro, 9 cm de altura), com fundo substituível e 3 opções de acabamento.', 11000, 'published', 5, null, 60, 60, 90, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Risotinho', 'risotinho', 'Molde para prato de risoto menor: 20 cm de diâmetro superior e 5,4 cm de altura.', 12000, 'published', 5, null, 200, 200, 54, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Copo Médio', 'copo-medio', 'Molde para copo médio (7,5 cm de diâmetro, 9 cm de altura), com fundo substituível e 3 opções de acabamento.', 13000, 'published', 5, null, 75, 75, 90, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Copo Grande', 'copo-grande', 'Molde para copo grande (9 cm de diâmetro, 9 cm de altura), com fundo substituível e 3 opções de acabamento.', 15000, 'published', 5, null, 90, 90, 90, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Manteigueira Francesa', 'manteigueira-francesa', 'Molde para manteigueira francesa, com fundo substituível e 3 opções de acabamento.', 13000, 'published', 5, null, 75, 75, 90, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'especiais'), 'Conjunto de Bowls', 'conjunto-de-bowls', 'Conjunto de três moldes de bowl (pequeno, médio e grande) para compor uma coleção completa de tigelas.', 40000, 'published', 5, null, 250, 250, 90, 'Feito à mão em MDF de 18 mm. Mantenha em local seco; limpe com pano levemente úmido, sem imergir em água.'),
+  ((select id from public.category where slug = 'ferramentas'), 'Disco para Torno Inteiriço', 'disco-para-torno-inteirico', 'Disco de 31 cm em MDF naval, projetado para encaixar no torno sem folga que cause vibração nem aperto que dificulte a remoção. Preço por unidade; consulte valores para quantidades maiores.', 3500, 'published', 5, null, 310, 310, 6, 'MDF naval, resistente à água. Seque após o uso e guarde em local ventilado.'),
+  ((select id from public.category where slug = 'ferramentas'), 'Disco com Miolo Removível para Torno', 'disco-com-miolo-removivel-para-torno', 'Disco de 32 cm para torno com miolo removível de 20 x 20 cm, em MDF naval. Preço para 1 disco + 1 miolo; consulte outras combinações.', 5500, 'published', 5, null, 320, 320, 6, 'MDF naval, resistente à água. Seque após o uso e guarde em local ventilado.'),
+  ((select id from public.category where slug = 'ferramentas'), 'Descanso para Secagem', 'descanso-para-secagem', 'Placa em MDF naval para secagem e organização das peças. Preço a partir do tamanho 10 x 10 cm; disponível em vários tamanhos.', 500, 'published', 5, null, 100, 100, 6, 'MDF naval, resistente à água. Seque após o uso e guarde em local ventilado.'),
+  ((select id from public.category where slug = 'ferramentas'), 'Gabarito para Corte Circular', 'gabarito-para-corte-circular', 'Gabarito para corte circular em MDF de 3 mm, com medidas de 10 a 30 cm.', 7000, 'published', 5, null, 300, 300, 3, 'MDF comum. Mantenha em local seco; evite contato prolongado com água.'),
+  ((select id from public.category where slug = 'ferramentas'), 'Régua Niveladora 6 mm (par)', 'regua-niveladora-6-mm-par', 'Par de réguas niveladoras de 6 mm em MDF naval, para nivelar a espessura da placa de argila. 40 cm de comprimento.', 2500, 'published', 5, null, 400, 40, 6, 'MDF naval, resistente à água. Seque após o uso e guarde em local ventilado.'),
+  ((select id from public.category where slug = 'ferramentas'), 'Régua Niveladora 9 mm (par)', 'regua-niveladora-9-mm-par', 'Par de réguas niveladoras de 9 mm em MDF comum, para placas mais espessas. 35 cm de comprimento.', 2500, 'published', 5, null, 350, 40, 9, 'MDF comum. Mantenha em local seco; evite contato prolongado com água.'),
+  ((select id from public.category where slug = 'ferramentas'), 'Régua Niveladora 3 mm (par)', 'regua-niveladora-3-mm-par', 'Par de réguas niveladoras de 3 mm em MDF comum, para placas finas. 40 cm de comprimento.', 2500, 'published', 5, null, 400, 40, 3, 'MDF comum. Mantenha em local seco; evite contato prolongado com água.')
 on conflict (slug) do nothing;
