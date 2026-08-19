@@ -1,0 +1,26 @@
+# Lefthook — git hooks. Docs: https://lefthook.dev
+# Instalado automaticamente via script "prepare" no `pnpm install`.
+
+pre-commit:
+  parallel: true
+  commands:
+    # 1) Varredura de segredos ANTES de qualquer coisa: bloqueia o commit se
+    #    detectar API key, token, connection string etc. nos arquivos staged.
+    secretlint:
+      glob: "*"
+      run: pnpm exec secretlint --maskSecrets --secretlintignore .gitignore {staged_files}
+
+    # 2) Lint + format do Biome nos arquivos staged. --write corrige o que for
+    #    seguro; stage_fixed re-adiciona os arquivos corrigidos ao commit.
+    #    Erros de lint nao auto-corrigiveis fazem o commit falhar (proposital).
+    biome:
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,css}"
+      run: pnpm exec biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+pre-push:
+  parallel: true
+  commands:
+    # Rede de seguranca antes de publicar: typecheck do projeto inteiro.
+    typecheck:
+      run: pnpm run typecheck

@@ -1,3 +1,7 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+# Build scripts aprovados explicitamente (defesa de supply chain do pnpm 10):
+# so rodam postinstall os pacotes confiaveis que listamos aqui.
+onlyBuiltDependencies:
+  - lefthook
