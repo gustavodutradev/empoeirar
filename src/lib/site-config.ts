@@ -11,7 +11,7 @@ export const siteConfig = {
   instagramUrl: "https://instagram.com/empoeirar",
   whatsappLabel: "(31) 98646-0734",
   whatsappUrl: "https://wa.me/5531986460734",
-  email: "contato@empoeirar.com.br", // a confirmar
+  email: "contato@empoeirar.com",
   cnpj: "a confirmar",
   city: "Belo Horizonte · MG",
 } as const;
