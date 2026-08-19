@@ -9,9 +9,9 @@ export const siteConfig = {
   tagline: "Moldes e ferramentas de madeira para ceramistas.",
   instagramHandle: "@empoeirar",
   instagramUrl: "https://instagram.com/empoeirar",
-  whatsappLabel: "(31) 98474-1145",
-  whatsappUrl: "https://wa.me/5531984741145",
-  email: "contato@empoeirar.com.br",
+  whatsappLabel: "(31) 98646-0734",
+  whatsappUrl: "https://wa.me/5531986460734",
+  email: "contato@empoeirar.com.br", // a confirmar
   cnpj: "a confirmar",
   city: "Belo Horizonte · MG",
 } as const;
