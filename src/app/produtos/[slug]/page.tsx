@@ -5,7 +5,6 @@ import { ProductCarousel } from "@/components/site/product-carousel";
 import { ProductPurchase } from "@/components/site/product-purchase";
 import { getProductImages } from "@/lib/product-images";
 import { getProductBySlug } from "@/lib/queries/catalog";
-import { siteConfig } from "@/lib/site-config";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -48,11 +47,7 @@ export default async function ProductPage({ params }: Params) {
             <p className="leading-relaxed text-foreground/80">{product.description}</p>
           ) : null}
 
-          <ProductPurchase
-            productName={product.name}
-            variants={product.variants}
-            whatsappBaseUrl={siteConfig.whatsappUrl}
-          />
+          <ProductPurchase variants={product.variants} />
 
           {product.material_care ? (
             <div className="border-t pt-4 text-sm">

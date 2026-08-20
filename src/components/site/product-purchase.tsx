@@ -1,5 +1,6 @@
 "use client";
 
+import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatBRL, mmToCm } from "@/lib/format";
@@ -7,24 +8,17 @@ import type { ProductVariant } from "@/lib/queries/catalog";
 import { cn } from "@/lib/utils";
 
 /**
- * Bloco de compra: preco + seletor de variante (tamanho/quantidade) + dimensoes
- * da opcao escolhida + CTA. A variante selecionada e o que, na Fase 2, alimenta
- * o carrinho e o calculo de frete (peso/dimensoes vem dela).
+ * Bloco de compra: preco + seletor de variante (tamanho/quantidade) + contador
+ * de quantidade + CTA. A variante escolhida e a quantidade sao o que, na Fase 2,
+ * alimentam o carrinho e o calculo de frete (peso/dimensoes vem da variante).
  */
-export function ProductPurchase({
-  productName,
-  variants,
-  whatsappBaseUrl,
-}: {
-  productName: string;
-  variants: ProductVariant[];
-  whatsappBaseUrl: string;
-}) {
+export function ProductPurchase({ variants }: { variants: ProductVariant[] }) {
   const defaultIndex = Math.max(
     0,
     variants.findIndex((v) => v.is_default),
   );
   const [index, setIndex] = useState(defaultIndex);
+  const [quantity, setQuantity] = useState(1);
   const selected = variants[index];
   const hasOptions = variants.length > 1;
 
@@ -32,11 +26,6 @@ export function ProductPurchase({
     selected.length_mm !== null && selected.width_mm !== null
       ? `${mmToCm(selected.length_mm)} × ${mmToCm(selected.width_mm)} cm`
       : null;
-
-  const message = `Olá! Tenho interesse no molde "${productName}"${
-    hasOptions ? ` (${selected.label})` : ""
-  }.`;
-  const whatsappUrl = `${whatsappBaseUrl}?text=${encodeURIComponent(message)}`;
 
   // Molde plano (<= 20mm) -> "Espessura"; forma 3D (copo/prato) -> "Altura".
   const heightLabel =
@@ -98,17 +87,37 @@ export function ProductPurchase({
         ) : null}
       </dl>
 
-      <div className="flex flex-col gap-2">
-        <Button asChild size="lg">
-          <a href={whatsappUrl} target="_blank" rel="noreferrer">
-            Comprar
-          </a>
-        </Button>
-        {/* <p className="text-xs text-muted-foreground">
-          O carrinho e o pagamento no site chegam na próxima fase. Por ora, o pedido é combinado
-          pelo WhatsApp.
-        </p> */}
+      {/* Quantidade */}
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-muted-foreground">Quantidade</span>
+        <div className="flex items-center rounded-lg border">
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            disabled={quantity <= 1}
+            aria-label="Diminuir quantidade"
+            className="flex size-9 items-center justify-center rounded-l-lg text-primary transition-colors hover:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Minus className="size-4" />
+          </button>
+          <span className="w-10 text-center tabular-nums" aria-live="polite">
+            {quantity}
+          </span>
+          <button
+            type="button"
+            onClick={() => setQuantity((q) => q + 1)}
+            aria-label="Aumentar quantidade"
+            className="flex size-9 items-center justify-center rounded-r-lg text-primary transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Plus className="size-4" />
+          </button>
+        </div>
       </div>
+
+      {/* TODO: ligar ao carrinho (proximo passo). Por ora, sem acao. */}
+      <Button type="button" size="lg">
+        Adicionar ao Carrinho
+      </Button>
     </div>
   );
 }
