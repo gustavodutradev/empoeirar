@@ -47,7 +47,12 @@ export default async function ProductPage({ params }: Params) {
             <p className="leading-relaxed text-foreground/80">{product.description}</p>
           ) : null}
 
-          <ProductPurchase variants={product.variants} />
+          <ProductPurchase
+            variants={product.variants}
+            productName={product.name}
+            productSlug={product.slug}
+            image={images[0]}
+          />
 
           {product.material_care ? (
             <div className="border-t pt-4 text-sm">

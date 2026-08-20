@@ -3,6 +3,7 @@
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/lib/cart/store";
 import { formatBRL, mmToCm } from "@/lib/format";
 import type { ProductVariant } from "@/lib/queries/catalog";
 import { cn } from "@/lib/utils";
@@ -12,15 +13,44 @@ import { cn } from "@/lib/utils";
  * de quantidade + CTA. A variante escolhida e a quantidade sao o que, na Fase 2,
  * alimentam o carrinho e o calculo de frete (peso/dimensoes vem da variante).
  */
-export function ProductPurchase({ variants }: { variants: ProductVariant[] }) {
+export function ProductPurchase({
+  variants,
+  productName,
+  productSlug,
+  image,
+}: {
+  variants: ProductVariant[];
+  productName: string;
+  productSlug: string;
+  image?: string;
+}) {
+  const addItem = useCart((s) => s.addItem);
   const defaultIndex = Math.max(
     0,
     variants.findIndex((v) => v.is_default),
   );
   const [index, setIndex] = useState(defaultIndex);
   const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
   const selected = variants[index];
   const hasOptions = variants.length > 1;
+
+  function handleAddToCart() {
+    addItem(
+      {
+        variantId: selected.id,
+        productSlug,
+        productName,
+        variantLabel: selected.label,
+        priceCents: selected.price_cents,
+        image,
+      },
+      quantity,
+    );
+    setQuantity(1);
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 1600);
+  }
 
   const dims =
     selected.length_mm !== null && selected.width_mm !== null
@@ -114,9 +144,8 @@ export function ProductPurchase({ variants }: { variants: ProductVariant[] }) {
         </div>
       </div>
 
-      {/* TODO: ligar ao carrinho (proximo passo). Por ora, sem acao. */}
-      <Button type="button" size="lg">
-        Adicionar ao Carrinho
+      <Button type="button" size="lg" onClick={handleAddToCart}>
+        {added ? "Adicionado ✓" : "Adicionar ao Carrinho"}
       </Button>
     </div>
   );

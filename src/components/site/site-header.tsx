@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CartIndicator } from "@/components/site/cart-indicator";
 import { mainNav, siteConfig } from "@/lib/site-config";
 
 export function SiteHeader() {
@@ -9,28 +10,31 @@ export function SiteHeader() {
           {siteConfig.name}
         </Link>
 
-        <nav aria-label="Navegação principal">
-          <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            {mainNav.map((item) => (
-              <li key={item.href}>
+        <div className="flex items-center gap-4 sm:gap-6">
+          <nav aria-label="Navegação principal">
+            <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              {mainNav.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className="text-foreground/80 transition-colors hover:text-primary"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+              <li>
                 <Link
-                  href={item.href}
+                  href="/entrar"
                   className="text-foreground/80 transition-colors hover:text-primary"
                 >
-                  {item.label}
+                  Entrar
                 </Link>
               </li>
-            ))}
-            <li>
-              <Link
-                href="/entrar"
-                className="text-foreground/80 transition-colors hover:text-primary"
-              >
-                Entrar
-              </Link>
-            </li>
-          </ul>
-        </nav>
+            </ul>
+          </nav>
+          <CartIndicator />
+        </div>
       </div>
     </header>
   );
