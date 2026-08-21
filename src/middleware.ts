@@ -34,6 +34,6 @@ export const config = {
      * - _next/static, _next/image (bundles e imagens otimizadas)
      * - favicon.ico e arquivos de imagem estaticos
      */
-    "/((?!api/health|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api/health|api/webhooks|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

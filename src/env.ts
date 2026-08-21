@@ -20,6 +20,15 @@ export const env = createEnv({
     // Chave service_role do Supabase: ela BYPASSA a RLS (acesso total ao
     // banco). Por isso mora aqui, so no servidor. Nunca prefixar NEXT_PUBLIC_.
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+
+    // --- Mercado Pago (Fase 2) ---
+    // OPCIONAIS de proposito: sem elas, o app roda normal e o checkout so nao
+    // oferece pagamento (degrada com aviso). Preencher quando a conta do Jane
+    // estiver pronta. Access token = SEGREDO (nunca no cliente, nunca NEXT_PUBLIC_).
+    MERCADOPAGO_ACCESS_TOKEN: z.string().min(1).optional(),
+    // Segredo da assinatura do webhook (painel do MP > Webhooks): valida que a
+    // notificacao veio mesmo do Mercado Pago.
+    MERCADOPAGO_WEBHOOK_SECRET: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.url(),

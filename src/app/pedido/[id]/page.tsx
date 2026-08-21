@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PayButton } from "@/components/site/pay-button";
 import { ORDER_FLOW, ORDER_STATUS } from "@/lib/checkout/status";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Seu pedido" };
 
-type Params = { params: Promise<{ id: string }> };
+type Params = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ pagamento?: string }>;
+};
 
-export default async function OrderPage({ params }: Params) {
+export default async function OrderPage({ params, searchParams }: Params) {
   const { id } = await params;
+  const { pagamento } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -56,9 +61,20 @@ export default async function OrderPage({ params }: Params) {
         </p>
         <h1 className="mt-1 font-display text-3xl text-primary">Pedido criado!</h1>
         <p className="mt-2 text-muted-foreground">
-          Enviamos a confirmação para {order.customer_email}. O pagamento e o cálculo do frete são a
-          próxima etapa.
+          Enviamos a confirmação para {order.customer_email}.
         </p>
+
+        {order.status === "pending_payment" ? (
+          <div className="mt-6">
+            {pagamento === "retorno" ? (
+              <p className="mb-3 text-sm text-muted-foreground">
+                Recebemos seu retorno do Mercado Pago. Assim que o pagamento for confirmado, o
+                status abaixo é atualizado automaticamente.
+              </p>
+            ) : null}
+            <PayButton orderId={order.id} />
+          </div>
+        ) : null}
       </div>
 
       {/* Linha do tempo */}
