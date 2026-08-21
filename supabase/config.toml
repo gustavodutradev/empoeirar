@@ -233,6 +233,16 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
+# Template do e-mail de acesso passwordless (mostra o codigo OTP). Em producao,
+# os templates sao configurados no painel do Supabase.
+[auth.email.template.magic_link]
+subject = "Seu codigo de acesso — Empoeirar"
+content_path = "./supabase/templates/otp.html"
+
+[auth.email.template.confirmation]
+subject = "Seu codigo de acesso — Empoeirar"
+content_path = "./supabase/templates/otp.html"
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { AuthNav } from "@/components/site/auth-nav";
 import { CartIndicator } from "@/components/site/cart-indicator";
 import { mainNav, siteConfig } from "@/lib/site-config";
 
@@ -23,16 +25,20 @@ export function SiteHeader() {
                   </Link>
                 </li>
               ))}
-              <li>
-                <Link
-                  href="/entrar"
-                  className="text-foreground/80 transition-colors hover:text-primary"
-                >
-                  Entrar
-                </Link>
-              </li>
             </ul>
           </nav>
+          <Suspense
+            fallback={
+              <Link
+                href="/entrar"
+                className="text-foreground/80 transition-colors hover:text-primary"
+              >
+                Entrar
+              </Link>
+            }
+          >
+            <AuthNav />
+          </Suspense>
           <CartIndicator />
         </div>
       </div>

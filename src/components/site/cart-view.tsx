@@ -104,11 +104,11 @@ export function CartView() {
           O frete é calculado no checkout, conforme o CEP.
         </p>
 
-        <Button type="button" size="lg" className="mt-6 w-full">
-          Finalizar compra
+        <Button asChild size="lg" className="mt-6 w-full">
+          <Link href="/checkout">Finalizar compra</Link>
         </Button>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          Checkout (frete + pagamento) é o próximo passo.
+          Você precisa estar logado para concluir.
         </p>
 
         <button
