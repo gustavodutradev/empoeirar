@@ -35,6 +35,10 @@ yarn-error.log*
 # ...mas o template de exemplo DEVE ser versionado (sem valores reais)
 !.env.example
 
+# fotos de produto (teste local) — em producao vao para o Supabase Storage.
+# Remova esta linha se quiser versionar/deployar as imagens de public/produtos.
+/public/produtos/
+
 # vercel
 .vercel
 

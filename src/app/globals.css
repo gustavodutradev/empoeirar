@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
+/* Habilita o variante `dark:` acionado pela classe .dark (nao pelo SO). */
+@custom-variant dark (&:is(.dark *));
+
+/* =============================================================================
+   Identidade Empoeirar — paleta do catalogo.
+   creme #F2F1E8 · bege/tan #D5C2A5 · ardosia #50545E · preto #111111
+   Os nomes semanticos (background, primary, card...) sao os que o shadcn/ui
+   consome; assim os componentes ja nascem na cara da marca.
+   ========================================================================== */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 0.75rem;
+
+  --background: #f2f1e8; /* creme — fundo geral */
+  --foreground: #111111; /* preto — texto de corpo */
+
+  --card: #fbfaf3; /* off-white quente para cards de produto */
+  --card-foreground: #111111;
+  --popover: #fbfaf3;
+  --popover-foreground: #111111;
+
+  --primary: #50545e; /* ardosia — botoes/titulos */
+  --primary-foreground: #f5f4ec;
+
+  --secondary: #d5c2a5; /* bege/tan — blocos e rodape */
+  --secondary-foreground: #3a3730;
+
+  --muted: #e8e5d8;
+  --muted-foreground: #6b675c;
+
+  --accent: #d5c2a5;
+  --accent-foreground: #3a3730;
+
+  --destructive: #b3261e;
+  --destructive-foreground: #f5f4ec;
+
+  --border: #dad5c5;
+  --input: #dad5c5;
+  --ring: #50545e; /* foco visivel (a11y) na cor ardosia */
 }
 
+/* Variante escura (quente). Nao e forcada — so vale se .dark estiver no <html>. */
+.dark {
+  --background: #1b1a17;
+  --foreground: #f2f1e8;
+
+  --card: #232019;
+  --card-foreground: #f2f1e8;
+  --popover: #232019;
+  --popover-foreground: #f2f1e8;
+
+  --primary: #d5c2a5;
+  --primary-foreground: #1b1a17;
+
+  --secondary: #3a3730;
+  --secondary-foreground: #f2f1e8;
+
+  --muted: #2b2822;
+  --muted-foreground: #b6b0a0;
+
+  --accent: #3a3730;
+  --accent-foreground: #f2f1e8;
+
+  --destructive: #e5695f;
+  --destructive-foreground: #1b1a17;
+
+  --border: #3a3730;
+  --input: #3a3730;
+  --ring: #d5c2a5;
+}
+
+/* Mapeia os tokens para utilitarios do Tailwind v4 (bg-background, text-primary...) */
 @theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Corpo em Arapey; titulos na serifa de display Fraunces (fallback de Higuen). */
+  --font-sans: var(--font-arapey), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-display);
+    color: var(--primary);
+    letter-spacing: -0.01em;
+  }
 }
