@@ -94,7 +94,19 @@ const productImages: Record<string, string[]> = {
   ursinhos: ["Ursinhos 1.png", "Ursinhos 2.png", "Ursinhos 3.png", "Ursinhos 4.png"],
 };
 
+import { env } from "@/env";
+
+/**
+ * Base das URLs das fotos.
+ * - Local (Supabase local): serve de `public/produtos` (as fotos estao no disco).
+ * - Producao/staging: serve do bucket publico `produtos` no Supabase Storage.
+ * A troca e automatica pela URL do Supabase, sem env extra.
+ */
+const url = env.NEXT_PUBLIC_SUPABASE_URL;
+const isLocalSupabase = url.includes("127.0.0.1") || url.includes("localhost");
+const imageBase = isLocalSupabase ? "/produtos" : `${url}/storage/v1/object/public/produtos`;
+
 /** URLs (encodadas) das fotos de um produto; [] se nao houver foto. */
 export function getProductImages(slug: string): string[] {
-  return (productImages[slug] ?? []).map((f) => `/produtos/${encodeURIComponent(f)}`);
+  return (productImages[slug] ?? []).map((f) => `${imageBase}/${encodeURIComponent(f)}`);
 }
