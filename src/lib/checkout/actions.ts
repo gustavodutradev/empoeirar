@@ -1,6 +1,7 @@
 "use server";
 
 import { createOrderInputSchema } from "@/lib/checkout/schema";
+import { quoteFreight } from "@/lib/shipping/quote";
 import { createClient } from "@/lib/supabase/server";
 
 type CreateOrderResult = { ok: true; orderId: string } | { ok: false; error: string };
@@ -13,9 +14,11 @@ type CreateOrderResult = { ok: true; orderId: string } | { ok: false; error: str
  *  2. Zod — revalida TODO o input (mesmo schema do cliente); nada entra cru.
  *  3. email vem de user.email (a identidade autenticada), NAO do que o cliente
  *     mandou — o campo do form e so exibicao.
- *  4. rpc create_order — recalcula precos do banco e insere atomico. O cliente
- *     manda so {variantId, quantity}; preco nunca trafega daqui.
- * Erros voltam genericos pro cliente (sem detalhe interno); o real fica no log.
+ *  4. FRETE recalculado: o cliente manda so o id do servico escolhido; o
+ *     servidor cota de novo no Melhor Envio e usa o preco autoritativo. Preco
+ *     de frete forjado no cliente e ignorado.
+ *  5. rpc create_order — recalcula precos dos itens do banco, soma o frete e
+ *     insere atomico.
  */
 export async function createOrder(input: unknown): Promise<CreateOrderResult> {
   const supabase = await createClient();
@@ -31,7 +34,25 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
-  const { customer, address, items } = parsed.data;
+  const { customer, address, items, shippingServiceId } = parsed.data;
+
+  // Frete: se o cliente escolheu um serviço, RECALCULAMOS aqui (nunca confiamos
+  // no preço que veio do cliente).
+  let shippingCents: number | null = null;
+  let shippingService: string | null = null;
+  if (shippingServiceId != null) {
+    try {
+      const options = await quoteFreight(address.cep, items);
+      const chosen = options.find((o) => o.id === shippingServiceId);
+      if (!chosen) {
+        return { ok: false, error: "Opção de frete indisponível. Selecione o frete novamente." };
+      }
+      shippingCents = chosen.priceCents;
+      shippingService = [chosen.company, chosen.name].filter(Boolean).join(" ").trim();
+    } catch {
+      return { ok: false, error: "Não foi possível confirmar o frete. Tente novamente." };
+    }
+  }
 
   const { data, error } = await supabase.rpc("create_order", {
     p_items: items.map((i) => ({ variant_id: i.variantId, quantity: i.quantity })),
@@ -50,6 +71,8 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
       city: address.city,
       state: address.state,
     },
+    p_shipping_cents: shippingCents,
+    p_shipping_service: shippingService,
   });
 
   if (error || typeof data !== "string") {

@@ -9,8 +9,18 @@ import { selectTotalCents, useCart, useHasHydrated } from "@/lib/cart/store";
 import { createOrder } from "@/lib/checkout/actions";
 import { checkoutFormSchema } from "@/lib/checkout/schema";
 import { formatBRL } from "@/lib/format";
+import { getFreightOptions } from "@/lib/shipping/actions";
 
 type Prefill = { full_name: string; phone: string; cpf: string; email: string };
+
+// Espelha FreightOption do servidor (tipo local para não importar módulo server-only).
+type FreightOption = {
+  id: number;
+  name: string;
+  company: string;
+  priceCents: number;
+  deliveryDays: number;
+};
 
 type FieldName =
   | "full_name"
@@ -43,7 +53,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const router = useRouter();
   const hydrated = useHasHydrated();
   const items = useCart((s) => s.items);
-  const total = useCart(selectTotalCents);
+  const subtotal = useCart(selectTotalCents);
   const clear = useCart((s) => s.clear);
 
   const [form, setForm] = useState<Record<FieldName, string>>({
@@ -58,8 +68,35 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const [cepLoading, setCepLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const [freight, setFreight] = useState<FreightOption[]>([]);
+  const [freightId, setFreightId] = useState<number | null>(null);
+  const [freightLoading, setFreightLoading] = useState(false);
+  const [freightMsg, setFreightMsg] = useState<string | null>(null);
+
+  const selectedFreight = freight.find((f) => f.id === freightId) ?? null;
+  const total = subtotal + (selectedFreight?.priceCents ?? 0);
+
   function set(field: FieldName, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function fetchFreight(cep: string) {
+    if (cep.length !== 8 || items.length === 0) return;
+    setFreightLoading(true);
+    setFreightMsg(null);
+    setFreight([]);
+    setFreightId(null);
+    const res = await getFreightOptions({
+      toCep: cep,
+      items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+    });
+    setFreightLoading(false);
+    if (res.ok) {
+      setFreight(res.options);
+    } else if (!res.unconfigured) {
+      // "unconfigured" = ME sem token: silencia e mantém "frete a calcular".
+      setFreightMsg(res.error);
+    }
   }
 
   async function lookupCep() {
@@ -88,6 +125,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
     } finally {
       setCepLoading(false);
     }
+    await fetchFreight(cep);
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -106,6 +144,12 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
       return;
     }
 
+    // Se há opções de frete, exige escolha antes de finalizar.
+    if (freight.length > 0 && freightId == null) {
+      setGeneralError("Escolha uma opção de frete.");
+      return;
+    }
+
     const v = result.data;
     setSubmitting(true);
     const res = await createOrder({
@@ -120,6 +164,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
         state: v.state,
       },
       items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
+      shippingServiceId: freightId ?? undefined,
     });
     setSubmitting(false);
 
@@ -282,13 +327,56 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
           ))}
         </ul>
 
+        {/* Frete */}
+        <div className="mt-4 border-t pt-4">
+          <p className="text-sm font-medium">Frete</p>
+          {freightLoading ? (
+            <p className="mt-1 text-sm text-muted-foreground">Calculando frete…</p>
+          ) : freight.length > 0 ? (
+            <div className="mt-2 flex flex-col gap-2">
+              {freight.map((option) => (
+                <label
+                  key={option.id}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors has-[:checked]:border-primary has-[:checked]:bg-secondary"
+                >
+                  <input
+                    type="radio"
+                    name="frete"
+                    value={option.id}
+                    checked={freightId === option.id}
+                    onChange={() => setFreightId(option.id)}
+                    className="accent-primary"
+                  />
+                  <span className="flex-1">
+                    {[option.company, option.name].filter(Boolean).join(" ")}
+                    <span className="block text-xs text-muted-foreground">
+                      até {option.deliveryDays} dia(s) úteis
+                    </span>
+                  </span>
+                  <span className="tabular-nums">{formatBRL(option.priceCents)}</span>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {freightMsg ?? "Preencha o CEP para calcular."}
+            </p>
+          )}
+        </div>
+
         <div className="mt-4 flex justify-between border-t pt-4 text-sm">
           <span className="text-muted-foreground">Subtotal</span>
-          <span className="font-medium tabular-nums">{formatBRL(total)}</span>
+          <span className="tabular-nums">{formatBRL(subtotal)}</span>
         </div>
-        <div className="mt-1 flex justify-between text-sm">
-          <span className="text-muted-foreground">Frete</span>
-          <span className="text-muted-foreground">a calcular</span>
+        {selectedFreight ? (
+          <div className="mt-1 flex justify-between text-sm">
+            <span className="text-muted-foreground">Frete</span>
+            <span className="tabular-nums">{formatBRL(selectedFreight.priceCents)}</span>
+          </div>
+        ) : null}
+        <div className="mt-2 flex justify-between text-base font-medium">
+          <span>Total</span>
+          <span className="tabular-nums">{formatBRL(total)}</span>
         </div>
 
         {generalError ? (
@@ -301,7 +389,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
           {submitting ? "Criando pedido…" : "Criar pedido"}
         </Button>
         <p className="mt-2 text-center text-xs text-muted-foreground">
-          O pagamento e o frete entram na próxima etapa.
+          O pagamento entra na próxima etapa.
         </p>
       </aside>
     </form>

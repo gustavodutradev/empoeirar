@@ -56,6 +56,10 @@ export const createOrderInputSchema = z.object({
   customer: customerSchema,
   address: addressSchema,
   items: z.array(orderItemSchema).min(1, "Carrinho vazio."),
+  // ID do serviço de frete escolhido (Melhor Envio). Opcional: se ausente
+  // (ME não configurado, ou sem seleção), o pedido nasce com frete a calcular.
+  // O PREÇO nunca vem do cliente — só este id; o servidor recalcula.
+  shippingServiceId: z.number().int().optional(),
 });
 
 export type CustomerInput = z.input<typeof customerSchema>;

@@ -29,6 +29,16 @@ export const env = createEnv({
     // Segredo da assinatura do webhook (painel do MP > Webhooks): valida que a
     // notificacao veio mesmo do Mercado Pago.
     MERCADOPAGO_WEBHOOK_SECRET: z.string().min(1).optional(),
+
+    // --- Melhor Envio (frete — Fase 2) ---
+    // OPCIONAIS: sem o token, o checkout degrada para "frete a calcular".
+    // Token de acesso pessoal (painel do ME). SEGREDO, so no servidor.
+    MELHORENVIO_TOKEN: z.string().min(1).optional(),
+    // "true" usa o ambiente sandbox (testes, sem envio real). Default: sandbox.
+    MELHORENVIO_SANDBOX: z.string().optional(),
+    // CEP de ORIGEM (de onde a Jane despacha). So digitos ou com traco.
+    // Enquanto nao temos o real, o codigo usa um placeholder de BH.
+    MELHORENVIO_FROM_CEP: z.string().optional(),
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.url(),
