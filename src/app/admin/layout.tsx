@@ -15,6 +15,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           >
             Pedidos
           </Link>
+          <Link
+            href="/admin/produtos"
+            className="text-foreground/80 transition-colors hover:text-primary"
+          >
+            Produtos
+          </Link>
         </nav>
         <Link href="/" className="ml-auto text-sm text-muted-foreground hover:text-primary">
           ← Voltar ao site
