@@ -27,10 +27,10 @@
   --secondary-foreground: #3a3730;
 
   --muted: #e8e5d8;
-  --muted-foreground: #6b675c;
+  --muted-foreground: #504b42; /* escurecido: mais contraste no texto secundario */
 
   --accent: #d5c2a5;
-  --accent-foreground: #3a3730;
+  --accent-foreground: #33302a;
 
   --destructive: #b3261e;
   --destructive-foreground: #f5f4ec;
@@ -106,9 +106,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Sobe o tamanho base do site inteiro um pouco (16px -> 17px). Como quase
+     tudo usa rem, texto e espacamentos crescem juntos, de forma proporcional. */
+  html {
+    font-size: 106.25%;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
+    /* Serifa fina (Arapey) pede um respiro maior entre linhas para ler melhor. */
+    line-height: 1.65;
+    text-rendering: optimizeLegibility;
   }
   h1,
   h2,
