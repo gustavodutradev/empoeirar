@@ -41,7 +41,9 @@ export default async function OrderPage({ params, searchParams }: Params) {
   const [{ data: items }, { data: events }] = await Promise.all([
     supabase
       .from("order_item")
-      .select("id, product_name, variant_label, unit_price_cents, quantity, line_total_cents")
+      .select(
+        "id, product_name, variant_label, unit_price_cents, quantity, line_total_cents, product_variant(product(slug))",
+      )
       .eq("order_id", order.id),
     supabase
       .from("order_status_event")
@@ -126,15 +128,28 @@ export default async function OrderPage({ params, searchParams }: Params) {
       <section className="mt-8">
         <h2 className="font-display text-xl text-primary">Itens</h2>
         <ul className="mt-4 flex flex-col divide-y">
-          {(items ?? []).map((item) => (
-            <li key={item.id} className="flex justify-between gap-4 py-3 text-sm">
-              <span>
-                {item.quantity}× {item.product_name}
-                <span className="block text-xs text-muted-foreground">{item.variant_label}</span>
-              </span>
-              <span className="tabular-nums">{formatBRL(item.line_total_cents)}</span>
-            </li>
-          ))}
+          {(items ?? []).map((item) => {
+            // Embed é objeto em runtime (relação muitos-para-um); o tipo gerado
+            // sem Database generic assume array, por isso o cast.
+            const slug = (item.product_variant as { product?: { slug?: string } } | null)?.product
+              ?.slug;
+            return (
+              <li key={item.id} className="flex justify-between gap-4 py-3 text-sm">
+                <span>
+                  {item.quantity}×{" "}
+                  {slug ? (
+                    <Link href={`/produtos/${slug}`} className="text-primary hover:underline">
+                      {item.product_name}
+                    </Link>
+                  ) : (
+                    item.product_name
+                  )}
+                  <span className="block text-xs text-muted-foreground">{item.variant_label}</span>
+                </span>
+                <span className="tabular-nums">{formatBRL(item.line_total_cents)}</span>
+              </li>
+            );
+          })}
         </ul>
 
         <div className="mt-4 flex flex-col gap-1 border-t pt-4 text-sm">
