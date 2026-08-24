@@ -44,16 +44,22 @@ export type CartItem = {
 
 type CartState = {
   items: CartItem[];
+  // Dono do carrinho local. null = convidado. Serve para o CartSync não fundir
+  // o carrinho de um usuário no de outro no mesmo navegador (anti-contaminação).
+  ownerId: string | null;
   addItem: (item: Omit<CartItem, "quantity">, quantity: number) => void;
   setQuantity: (variantId: string, quantity: number) => void;
   removeItem: (variantId: string) => void;
   clear: () => void;
+  // Substitui o carrinho pelo estado vindo do servidor (usado no login/sync).
+  hydrateFromServer: (items: CartItem[], ownerId: string) => void;
 };
 
 export const useCart = create<CartState>()(
   persist(
     (set) => ({
       items: [],
+      ownerId: null,
       addItem: (item, quantity) =>
         set((state) => {
           const existing = state.items.find((i) => i.variantId === item.variantId);
@@ -75,6 +81,7 @@ export const useCart = create<CartState>()(
       removeItem: (variantId) =>
         set((state) => ({ items: state.items.filter((i) => i.variantId !== variantId) })),
       clear: () => set({ items: [] }),
+      hydrateFromServer: (items, ownerId) => set({ items, ownerId }),
     }),
     {
       name: "empoeirar-cart",

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Arapey, Fraunces } from "next/font/google";
+import { CartSync } from "@/components/site/cart-sync";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
 import "./globals.css";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${arapey.variable} ${fraunces.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
+        <CartSync />
         <SiteHeader />
         {children}
         <SiteFooter />
