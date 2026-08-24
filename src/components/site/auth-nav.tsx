@@ -23,8 +23,18 @@ export async function AuthNav() {
     );
   }
 
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+
   return (
     <div className="flex items-center gap-3">
+      {isAdmin ? (
+        <Link
+          href="/admin/pedidos"
+          className="text-foreground/80 transition-colors hover:text-primary"
+        >
+          Admin
+        </Link>
+      ) : null}
       <Link href="/conta" className="text-foreground/80 transition-colors hover:text-primary">
         Minha conta
       </Link>
