@@ -49,22 +49,10 @@ export async function quoteFreight(cep: string, items: QuoteItem[]): Promise<Fre
 }
 
 /**
- * Curadoria: em vez de despejar 15 transportadoras no cliente, mostramos no
- * maximo duas — a MAIS BARATA e a MAIS RAPIDA. Se forem a mesma, mostra uma so.
- * A mesma lista vale para exibir e para revalidar o preco no create_order.
+ * Curadoria: em vez de despejar 15+ transportadoras no cliente, mostramos as
+ * 5 MAIS BARATAS (ordenadas do menor para o maior preco). A mesma lista vale
+ * para exibir e para revalidar o preco no create_order.
  */
 function curate(options: FreightOption[]): FreightOption[] {
-  if (options.length === 0) return [];
-
-  const cheapest = options.reduce((a, b) => (b.priceCents < a.priceCents ? b : a));
-  const fastest = options.reduce((a, b) => (b.deliveryDays < a.deliveryDays ? b : a));
-
-  if (cheapest.id === fastest.id) {
-    return [{ ...cheapest, tag: "Melhor opção" }];
-  }
-
-  return [
-    { ...cheapest, tag: "Mais barata" },
-    { ...fastest, tag: "Mais rápida" },
-  ].sort((a, b) => a.priceCents - b.priceCents);
+  return [...options].sort((a, b) => a.priceCents - b.priceCents).slice(0, 5);
 }

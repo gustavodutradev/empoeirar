@@ -4,7 +4,7 @@ import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart/store";
-import { formatBRL, mmToCm } from "@/lib/format";
+import { formatBRL, mmToCm, sizeLabel } from "@/lib/format";
 import type { ProductVariant } from "@/lib/queries/catalog";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +41,7 @@ export function ProductPurchase({
         variantId: selected.id,
         productSlug,
         productName,
-        variantLabel: selected.label,
+        variantLabel: sizeLabel(selected.label),
         priceCents: selected.price_cents,
         image,
       },
@@ -88,7 +88,7 @@ export function ProductPurchase({
                       : "bg-card hover:border-primary",
                   )}
                 >
-                  <span className="font-medium">{variant.label}</span>
+                  <span className="font-medium">{sizeLabel(variant.label)}</span>
                   <span
                     className={cn(active ? "text-primary-foreground/80" : "text-muted-foreground")}
                   >
