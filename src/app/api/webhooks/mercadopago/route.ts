@@ -32,7 +32,10 @@ export async function POST(request: Request) {
   } | null;
 
   const type = body?.type ?? url.searchParams.get("type") ?? url.searchParams.get("topic");
-  const dataId = String(body?.data?.id ?? url.searchParams.get("data.id") ?? "");
+  // O MP assina o data.id do QUERY STRING — é ele que entra no manifesto da
+  // assinatura (o corpo é só fallback). Usar o do corpo pode dar 401 em
+  // notificação legítima.
+  const dataId = url.searchParams.get("data.id") ?? String(body?.data?.id ?? "");
 
   // Só tratamos notificação de pagamento.
   if (type !== "payment" || !dataId) {
@@ -56,13 +59,39 @@ export async function POST(request: Request) {
   try {
     // Fonte da verdade: busca o pagamento direto no MP.
     const payment = await getPayment(dataId);
-    const nextStatus = mapPaymentStatus(payment.status);
+    // Pagamento inexistente (404) — ex.: id "123456" do simulador. Dá ack
+    // (200) e não avança nada; não é erro transitório, então não pede reenvio.
+    if (!payment) {
+      return NextResponse.json({ ignored: "payment_not_found" }, { status: 200 });
+    }
 
+    const nextStatus = mapPaymentStatus(payment.status);
     if (!nextStatus || !payment.externalReference) {
       return NextResponse.json({ ignored: "no_transition" }, { status: 200 });
     }
 
     const admin = createAdminClient();
+
+    // Cross-check ao CONFIRMAR pagamento: o valor pago tem que bater com o
+    // total do pedido. Impede que um pagamento de valor menor "confirme" um
+    // pedido caro (IDOR aplicado a pagamento).
+    if (nextStatus === "paid") {
+      const { data: order } = await admin
+        .from("customer_order")
+        .select("total_cents")
+        .eq("id", payment.externalReference)
+        .maybeSingle();
+      if (!order) {
+        return NextResponse.json({ ignored: "order_not_found" }, { status: 200 });
+      }
+      if (order.total_cents !== payment.amountCents) {
+        console.error(
+          `[mp webhook] valor divergente: pedido=${payment.externalReference} total=${order.total_cents} pago=${payment.amountCents}`,
+        );
+        return NextResponse.json({ ignored: "amount_mismatch" }, { status: 200 });
+      }
+    }
+
     const { error } = await admin.rpc("advance_order_status", {
       p_order_id: payment.externalReference,
       p_status: nextStatus,

@@ -32,7 +32,7 @@ export type CreatePreferenceInput = {
   orderId: string;
   items: PreferenceItem[];
   backUrl: string; // pra onde o cliente volta depois de pagar
-  notificationUrl: string; // nosso webhook
+  shippingCents?: number; // frete cobrado junto
   payerEmail?: string;
 };
 
@@ -62,7 +62,14 @@ export async function createPreference(
         failure: input.backUrl,
       },
       auto_return: "approved",
-      notification_url: input.notificationUrl,
+      // Frete cobrado junto: o cliente paga itens + frete. Sem isto, o valor
+      // pago nao bateria com o total do pedido (cross-check no webhook).
+      ...(input.shippingCents && input.shippingCents > 0
+        ? { shipments: { cost: input.shippingCents / 100, mode: "not_specified" } }
+        : {}),
+      // notification_url NAO vai aqui de proposito: a URL do webhook e a do
+      // painel do MP (fonte unica). URL na preferencia sobrescreveria a do
+      // painel silenciosamente.
     }),
   });
 
@@ -78,13 +85,25 @@ export async function createPreference(
  * Le um pagamento pelo id (o webhook so manda o id; a fonte da verdade e a API).
  * Nunca confiamos no status que "chega" — buscamos direto no MP.
  */
-export async function getPayment(
-  paymentId: string,
-): Promise<{ id: string; status: string; externalReference: string | null }> {
+export type MpPayment = {
+  id: string;
+  status: string;
+  externalReference: string | null;
+  amountCents: number;
+};
+
+/**
+ * Le um pagamento pelo id. Retorna null se o pagamento NAO existe (404) — o
+ * webhook trata isso como "nada a fazer" e da ack, sem reenvio eterno. Erros
+ * transitorios (5xx/rede) sao lancados para o webhook responder 500 e o MP
+ * reenviar. Nunca confiamos no corpo da notificacao: a verdade vem daqui.
+ */
+export async function getPayment(paymentId: string): Promise<MpPayment | null> {
   const res = await fetch(`${MP_API}/v1/payments/${paymentId}`, {
     headers: authHeaders(),
   });
 
+  if (res.status === 404) return null; // pagamento inexistente (ex.: id do simulador)
   if (!res.ok) {
     throw new Error(`MP getPayment falhou: ${res.status}`);
   }
@@ -93,10 +112,13 @@ export async function getPayment(
     id: number;
     status: string;
     external_reference: string | null;
+    transaction_amount: number | null;
   };
   return {
     id: String(data.id),
     status: data.status,
     externalReference: data.external_reference,
+    // Valor em centavos, para cross-check com o total do pedido.
+    amountCents: Math.round((data.transaction_amount ?? 0) * 100),
   };
 }

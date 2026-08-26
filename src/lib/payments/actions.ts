@@ -38,7 +38,7 @@ export async function startPayment(orderId: string): Promise<StartPaymentResult>
   // RLS garante que só lemos um pedido do próprio usuário.
   const { data: order } = await supabase
     .from("customer_order")
-    .select("id, status, customer_email")
+    .select("id, status, customer_email, shipping_cents")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -62,7 +62,7 @@ export async function startPayment(orderId: string): Promise<StartPaymentResult>
       orderId,
       payerEmail: order.customer_email ?? undefined,
       backUrl: `${base}/pedido/${orderId}?pagamento=retorno`,
-      notificationUrl: `${base}/api/webhooks/mercadopago`,
+      shippingCents: order.shipping_cents ?? undefined,
       items: items.map((item) => ({
         title: `${item.product_name} — ${item.variant_label}`,
         quantity: item.quantity,
