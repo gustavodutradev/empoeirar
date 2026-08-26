@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useCart } from "@/lib/cart/store";
-import { fetchServerCart, mergeCarts, reconcileServerCart } from "@/lib/cart/sync";
+import { type CartItem, useCart } from "@/lib/cart/store";
+import { fetchServerCart, mergeCarts, reconcileServerCart, unionCarts } from "@/lib/cart/sync";
 import { createClient } from "@/lib/supabase/client";
 
 /**
@@ -28,10 +28,20 @@ export function CartSync() {
       userIdRef.current = userId;
       const store = useCart.getState();
       const server = await fetchServerCart(supabase);
-      const sameOwnerOrGuest = !store.ownerId || store.ownerId === userId;
-      const merged = sameOwnerOrGuest ? mergeCarts(store.items, server) : server;
-      store.hydrateFromServer(merged, userId);
-      await reconcileServerCart(supabase, userId, merged);
+
+      // Três casos distintos — misturá-los é o que duplicava o carrinho:
+      //  - convidado (ownerId null): FUNDE o carrinho anônimo no do banco (soma),
+      //    uma única vez, na virada convidado→login;
+      //  - mesmo dono recarregando (ownerId === userId): UNIÃO sem somar — local
+      //    e banco são o mesmo carrinho já sincronizado;
+      //  - carrinho de OUTRA conta neste navegador: descarta o local, usa o banco.
+      let next: CartItem[];
+      if (store.ownerId === null) next = mergeCarts(store.items, server);
+      else if (store.ownerId === userId) next = unionCarts(store.items, server);
+      else next = server;
+
+      store.hydrateFromServer(next, userId);
+      await reconcileServerCart(supabase, userId, next);
     }
 
     // onAuthStateChange dispara INITIAL_SESSION no mount (com a sessão atual) e

@@ -55,7 +55,11 @@ export async function fetchServerCart(supabase: SupabaseClient): Promise<CartIte
   return out;
 }
 
-/** Funde carrinho local (convidado) com o do servidor: soma quantidades. */
+/**
+ * Funde carrinho de CONVIDADO com o do servidor: SOMA quantidades.
+ * Use SÓ na transição convidado→login (fusão única do carrinho anônimo).
+ * Somar em todo reload de um usuário já logado DUPLICA o carrinho.
+ */
 export function mergeCarts(local: CartItem[], server: CartItem[]): CartItem[] {
   const map = new Map<string, CartItem>();
   for (const s of server) map.set(s.variantId, { ...s });
@@ -64,6 +68,20 @@ export function mergeCarts(local: CartItem[], server: CartItem[]): CartItem[] {
     if (existing) existing.quantity = Math.min(99, existing.quantity + l.quantity);
     else map.set(l.variantId, { ...l });
   }
+  return [...map.values()];
+}
+
+/**
+ * União para o MESMO dono recarregando a página: NÃO soma. Para um item que
+ * existe nos dois lados, mantém a quantidade do LOCAL (é a ação mais recente do
+ * usuário; o banco pode estar atrás por causa do debounce). Mantém também os
+ * itens que só existem em um lado — assim não se perde item na corrida do
+ * debounce (local-only) nem alteração feita em outro dispositivo (server-only).
+ */
+export function unionCarts(local: CartItem[], server: CartItem[]): CartItem[] {
+  const map = new Map<string, CartItem>();
+  for (const s of server) map.set(s.variantId, { ...s });
+  for (const l of local) map.set(l.variantId, { ...l }); // local vence a quantidade; não soma
   return [...map.values()];
 }
 
