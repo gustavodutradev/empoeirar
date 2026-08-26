@@ -3,6 +3,7 @@ import { env } from "@/env";
 import { ORDER_STATUS } from "@/lib/checkout/status";
 import { getPayment, isMercadoPagoConfigured } from "@/lib/payments/mercadopago";
 import { mapPaymentStatus, verifyWebhookSignature } from "@/lib/payments/webhook-verify";
+import { allowRequest, clientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // node:crypto (assinatura) exige runtime Node, nao Edge.
@@ -23,6 +24,15 @@ export async function POST(request: Request) {
   // Sem access token configurado, nao ha como buscar o pagamento: ignora.
   if (!isMercadoPagoConfigured()) {
     return NextResponse.json({ ignored: "unconfigured" }, { status: 200 });
+  }
+
+  const admin = createAdminClient();
+
+  // Rate limit por IP: barra flood de notificações forjadas antes de gastar
+  // chamadas na API do MP. Limite generoso — o MP legítimo manda pouquíssimas.
+  const ip = clientIp(request.headers);
+  if (!(await allowRequest(admin, `mp-webhook:${ip}`, 300, 60))) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
   const url = new URL(request.url);
@@ -69,8 +79,6 @@ export async function POST(request: Request) {
     if (!nextStatus || !payment.externalReference) {
       return NextResponse.json({ ignored: "no_transition" }, { status: 200 });
     }
-
-    const admin = createAdminClient();
 
     // Cross-check ao CONFIRMAR pagamento: o valor pago tem que bater com o
     // total do pedido. Impede que um pagamento de valor menor "confirme" um

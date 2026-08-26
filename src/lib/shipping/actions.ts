@@ -1,9 +1,12 @@
 "use server";
 
+import { headers } from "next/headers";
 import { z } from "zod";
+import { allowRequest, clientIp } from "@/lib/rate-limit";
 import type { FreightOption } from "@/lib/shipping/melhor-envio";
 import { isMelhorEnvioConfigured } from "@/lib/shipping/melhor-envio";
 import { quoteFreight } from "@/lib/shipping/quote";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { onlyDigits } from "@/lib/validation/cpf";
 
 const inputSchema = z.object({
@@ -25,6 +28,13 @@ type FreightResult =
 export async function getFreightOptions(input: unknown): Promise<FreightResult> {
   if (!isMelhorEnvioConfigured()) {
     return { ok: false, unconfigured: true, error: "Cálculo de frete indisponível no momento." };
+  }
+
+  // Rate limit por IP: cada cotação chama a API do Melhor Envio. Limita
+  // abuso/scraping do cálculo de frete sem atrapalhar o checkout normal.
+  const ip = clientIp(await headers());
+  if (!(await allowRequest(createAdminClient(), `freight:${ip}`, 40, 60))) {
+    return { ok: false, error: "Muitas consultas de frete. Aguarde um instante." };
   }
 
   const parsed = inputSchema.safeParse(input);

@@ -1,6 +1,7 @@
 "use server";
 
 import { createOrderInputSchema } from "@/lib/checkout/schema";
+import { allowRequest } from "@/lib/rate-limit";
 import { quoteFreight } from "@/lib/shipping/quote";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,6 +29,12 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
   } = await supabase.auth.getUser();
   if (!user?.email) {
     return { ok: false, error: "Você precisa estar logado para finalizar." };
+  }
+
+  // Rate limit por usuário: criar pedido recalcula frete (chama Melhor Envio) e
+  // insere no banco. Limita flood de pedidos sem travar o uso normal.
+  if (!(await allowRequest(supabase, `create-order:${user.id}`, 15, 60))) {
+    return { ok: false, error: "Muitas tentativas. Aguarde um instante e tente de novo." };
   }
 
   const parsed = createOrderInputSchema.safeParse(input);

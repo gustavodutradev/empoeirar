@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { allowRequest, clientIp } from "@/lib/rate-limit";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { onlyDigits } from "@/lib/validation/cpf";
 
 /**
@@ -18,6 +20,13 @@ export async function GET(_request: Request, ctx: { params: Promise<{ cep: strin
 
   if (cep.length !== 8) {
     return NextResponse.json({ error: "CEP inválido." }, { status: 400 });
+  }
+
+  // Rate limit por IP: a rota é pública e faz fetch externo (ViaCEP). Limita
+  // abuso/scraping sem atrapalhar digitação normal do CEP.
+  const ip = clientIp(_request.headers);
+  if (!(await allowRequest(createAdminClient(), `cep:${ip}`, 60, 60))) {
+    return NextResponse.json({ error: "Muitas consultas. Aguarde um instante." }, { status: 429 });
   }
 
   try {

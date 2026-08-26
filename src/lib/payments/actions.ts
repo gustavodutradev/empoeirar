@@ -2,6 +2,7 @@
 
 import { env } from "@/env";
 import { createPreference, isMercadoPagoConfigured } from "@/lib/payments/mercadopago";
+import { allowRequest } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 type StartPaymentResult =
@@ -25,6 +26,12 @@ export async function startPayment(orderId: string): Promise<StartPaymentResult>
   } = await supabase.auth.getUser();
   if (!user) {
     return { ok: false, error: "Você precisa estar logado." };
+  }
+
+  // Rate limit por usuário: iniciar pagamento chama a API do MP (cria
+  // preference). Limita repetição/abuso sem travar retentativas legítimas.
+  if (!(await allowRequest(supabase, `start-payment:${user.id}`, 20, 60))) {
+    return { ok: false, error: "Muitas tentativas. Aguarde um instante e tente de novo." };
   }
 
   if (!isMercadoPagoConfigured()) {
