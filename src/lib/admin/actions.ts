@@ -1,6 +1,7 @@
 "use server";
 
 import { ORDER_STATUS, type OrderStatus } from "@/lib/checkout/status";
+import { sendOrderStatusEmail } from "@/lib/email/order-notification";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,7 +34,7 @@ export async function adminAdvanceOrder(orderId: string, status: string): Promis
   }
 
   const admin = createAdminClient();
-  const { error } = await admin.rpc("advance_order_status", {
+  const { data: changed, error } = await admin.rpc("advance_order_status", {
     p_order_id: orderId,
     p_status: status,
     p_note: ORDER_STATUS[status as OrderStatus].description,
@@ -43,6 +44,12 @@ export async function adminAdvanceOrder(orderId: string, status: string): Promis
   if (error) {
     console.error("[adminAdvanceOrder]", error.message);
     return { ok: false, error: "Não foi possível atualizar o status." };
+  }
+
+  // Notifica o cliente só quando o status muda de fato (não em re-clique no
+  // mesmo status). sendOrderStatusEmail ignora status fora do escopo v1.
+  if (changed === true) {
+    await sendOrderStatusEmail(orderId, status);
   }
 
   return { ok: true };

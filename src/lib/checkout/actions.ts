@@ -1,6 +1,7 @@
 "use server";
 
 import { createOrderInputSchema } from "@/lib/checkout/schema";
+import { sendOrderStatusEmail } from "@/lib/email/order-notification";
 import { allowRequest } from "@/lib/rate-limit";
 import { quoteFreight } from "@/lib/shipping/quote";
 import { createClient } from "@/lib/supabase/server";
@@ -86,6 +87,11 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
     console.error("[create_order] falhou:", error?.message ?? "retorno inesperado");
     return { ok: false, error: "Não foi possível criar o pedido. Tente novamente." };
   }
+
+  // E-mail "pedido recebido". Aguardamos (em serverless, um fire-and-forget
+  // pode ser morto após a resposta), mas a função é fail-soft: nunca lança, e
+  // uma falha de e-mail não impede a criação do pedido.
+  await sendOrderStatusEmail(data, "pending_payment");
 
   return { ok: true, orderId: data };
 }

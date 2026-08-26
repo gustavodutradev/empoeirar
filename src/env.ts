@@ -30,6 +30,12 @@ export const env = createEnv({
     // notificacao veio mesmo do Mercado Pago.
     MERCADOPAGO_WEBHOOK_SECRET: z.string().min(1).optional(),
 
+    // --- E-mail transacional (SMTP — reusa o Gmail já configurado) ---
+    // OPCIONAIS: sem eles, o envio de e-mail é pulado (log de aviso), o app
+    // segue normal. Senha = "app password" do Gmail (SEGREDO, só no servidor).
+    SMTP_USER: z.string().min(1).optional(),
+    SMTP_PASS: z.string().min(1).optional(),
+
     // --- Melhor Envio (frete — Fase 2) ---
     // OPCIONAIS: sem o token, o checkout degrada para "frete a calcular".
     // Token de acesso pessoal (painel do ME). SEGREDO, so no servidor.

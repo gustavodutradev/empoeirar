@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 import { ORDER_STATUS } from "@/lib/checkout/status";
+import { sendOrderStatusEmail } from "@/lib/email/order-notification";
 import { getPayment, isMercadoPagoConfigured } from "@/lib/payments/mercadopago";
 import { mapPaymentStatus, verifyWebhookSignature } from "@/lib/payments/webhook-verify";
 import { allowRequest, clientIp } from "@/lib/rate-limit";
@@ -100,7 +101,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const { error } = await admin.rpc("advance_order_status", {
+    const { data: changed, error } = await admin.rpc("advance_order_status", {
       p_order_id: payment.externalReference,
       p_status: nextStatus,
       p_note: ORDER_STATUS[nextStatus].description,
@@ -111,6 +112,12 @@ export async function POST(request: Request) {
       // Erro do banco: pede reenvio (500).
       console.error("[mp webhook] advance_order_status:", error.message);
       return NextResponse.json({ error: "db" }, { status: 500 });
+    }
+
+    // Só notifica se HOUVE transição de verdade. O MP reenvia webhooks; sem
+    // isto, um reenvio do mesmo pagamento mandaria e-mail duplicado ao cliente.
+    if (changed === true) {
+      await sendOrderStatusEmail(payment.externalReference, nextStatus);
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });
