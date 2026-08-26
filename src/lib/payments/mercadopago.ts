@@ -43,18 +43,35 @@ export type CreatePreferenceInput = {
 export async function createPreference(
   input: CreatePreferenceInput,
 ): Promise<{ id: string; initPoint: string }> {
+  // Itens do pedido. O MP espera valor decimal em reais (centavos / 100).
+  const items = input.items.map((item) => ({
+    title: item.title,
+    quantity: item.quantity,
+    currency_id: "BRL",
+    unit_price: item.unitPriceCents / 100,
+  }));
+
+  // FRETE como LINHA DE ITEM (nao como shipments.cost). Motivo: o shipments.cost
+  // do Checkout Pro so soma ao total de forma confiavel junto do Mercado Envios;
+  // com frete proprio (mode "not_specified") o MP as vezes NAO cobra o frete, e
+  // o valor pago fica menor que o total do pedido — o cross-check do webhook
+  // (corretamente) recusa e o pedido nao avanca. Como item, o frete entra
+  // SEMPRE no total cobrado, deterministicamente.
+  if (input.shippingCents && input.shippingCents > 0) {
+    items.push({
+      title: "Frete",
+      quantity: 1,
+      currency_id: "BRL",
+      unit_price: input.shippingCents / 100,
+    });
+  }
+
   const res = await fetch(`${MP_API}/checkout/preferences`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({
       external_reference: input.orderId,
-      items: input.items.map((item) => ({
-        title: item.title,
-        quantity: item.quantity,
-        currency_id: "BRL",
-        // MP espera valor decimal em reais (centavos / 100).
-        unit_price: item.unitPriceCents / 100,
-      })),
+      items,
       payer: input.payerEmail ? { email: input.payerEmail } : undefined,
       back_urls: {
         success: input.backUrl,
@@ -62,11 +79,6 @@ export async function createPreference(
         failure: input.backUrl,
       },
       auto_return: "approved",
-      // Frete cobrado junto: o cliente paga itens + frete. Sem isto, o valor
-      // pago nao bateria com o total do pedido (cross-check no webhook).
-      ...(input.shippingCents && input.shippingCents > 0
-        ? { shipments: { cost: input.shippingCents / 100, mode: "not_specified" } }
-        : {}),
       // notification_url NAO vai aqui de proposito: a URL do webhook e a do
       // painel do MP (fonte unica). URL na preferencia sobrescreveria a do
       // painel silenciosamente.
