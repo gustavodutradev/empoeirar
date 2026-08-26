@@ -90,7 +90,14 @@ export async function POST(request: Request) {
         extRef: payment?.externalReference ?? null,
         amountCents: payment?.amountCents ?? null,
         adminOrders: adminOrders ?? null,
-        adminErr: adminErr?.message ?? null,
+        adminErr: adminErr
+          ? {
+              code: adminErr.code ?? null,
+              message: adminErr.message ?? null,
+              details: adminErr.details ?? null,
+              hint: adminErr.hint ?? null,
+            }
+          : null,
       }),
     );
     // Pagamento inexistente (404) — ex.: id "123456" do simulador. Dá ack
