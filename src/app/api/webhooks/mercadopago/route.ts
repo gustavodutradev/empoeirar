@@ -69,6 +69,19 @@ export async function POST(request: Request) {
   try {
     // Fonte da verdade: busca o pagamento direto no MP.
     const payment = await getPayment(dataId);
+    // DIAGNÓSTICO (temporário): mostra o que o MP devolveu para este id.
+    // found:false => token não consegue ler este pagamento (token de outra
+    // conta) OU pagamento inexistente.
+    console.warn(
+      "[mp webhook] diag",
+      JSON.stringify({
+        dataId,
+        found: Boolean(payment),
+        status: payment?.status ?? null,
+        extRef: payment?.externalReference ?? null,
+        amountCents: payment?.amountCents ?? null,
+      }),
+    );
     // Pagamento inexistente (404) — ex.: id "123456" do simulador. Dá ack
     // (200) e não avança nada; não é erro transitório, então não pede reenvio.
     if (!payment) {
@@ -77,6 +90,7 @@ export async function POST(request: Request) {
 
     const nextStatus = mapPaymentStatus(payment.status);
     if (!nextStatus || !payment.externalReference) {
+      console.warn("[mp webhook] no_transition", payment.status, payment.externalReference);
       return NextResponse.json({ ignored: "no_transition" }, { status: 200 });
     }
 
