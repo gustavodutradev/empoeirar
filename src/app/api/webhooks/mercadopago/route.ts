@@ -69,6 +69,15 @@ export async function POST(request: Request) {
   try {
     // Fonte da verdade: busca o pagamento direto no MP.
     const payment = await getPayment(dataId);
+
+    // LITMUS do service_role (temporário): quantos pedidos o cliente admin
+    // enxerga. Se 0/null, o admin NAO esta bypassando a RLS (chave service_role
+    // errada no ambiente OU deploy velho sem a env nova) — e a causa de
+    // order_not_found. Se > 0, o admin le o banco e o problema e outro.
+    const { count: adminOrders, error: adminErr } = await admin
+      .from("customer_order")
+      .select("id", { count: "exact", head: true });
+
     // DIAGNÓSTICO (temporário): mostra o que o MP devolveu para este id.
     // found:false => token não consegue ler este pagamento (token de outra
     // conta) OU pagamento inexistente.
@@ -80,6 +89,8 @@ export async function POST(request: Request) {
         status: payment?.status ?? null,
         extRef: payment?.externalReference ?? null,
         amountCents: payment?.amountCents ?? null,
+        adminOrders: adminOrders ?? null,
+        adminErr: adminErr?.message ?? null,
       }),
     );
     // Pagamento inexistente (404) — ex.: id "123456" do simulador. Dá ack
