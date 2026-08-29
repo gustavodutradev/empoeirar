@@ -5,7 +5,7 @@ export const metadata = { title: "Trocas e devoluções" };
 
 export default function Page() {
   return (
-    <LegalPage title="Trocas e Devoluções" updatedAt="19 de agosto de 2026">
+    <LegalPage title="Trocas e Devoluções" updatedAt="29 de agosto de 2026">
       <p>
         Na Empoeirar, cada peça é feita à mão, com cuidado. Ainda assim, se algo não sair como o
         esperado, esta política explica como solicitar troca ou devolução, em conformidade com o

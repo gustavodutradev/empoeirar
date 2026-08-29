@@ -5,7 +5,7 @@ export const metadata = { title: "Política de privacidade" };
 
 export default function Page() {
   return (
-    <LegalPage title="Política de Privacidade" updatedAt="19 de agosto de 2026">
+    <LegalPage title="Política de Privacidade" updatedAt="29 de agosto de 2026">
       <p>
         Esta Política descreve como a Empoeirar coleta, usa, compartilha e protege seus dados
         pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD).
@@ -14,9 +14,10 @@ export default function Page() {
 
       <h2>Controlador dos dados</h2>
       <p>
-        Empoeirar — moldes e ferramentas para ceramistas. CNPJ: (a preencher). Endereço: (a
-        preencher). Contato: <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a> ·
-        WhatsApp {siteConfig.whatsappLabel}.
+        {siteConfig.legalName} (MEI) — Empoeirar, CNPJ {siteConfig.cnpj}, {siteConfig.city}.
+        Encarregado/contato para assuntos de privacidade:{" "}
+        <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a> · WhatsApp{" "}
+        {siteConfig.whatsappLabel}.
       </p>
 
       <h2>1. Dados que coletamos</h2>
@@ -61,10 +62,10 @@ export default function Page() {
         operar:
       </p>
       <ul>
-        <li>hospedagem do site e banco de dados;</li>
-        <li>meio de pagamento (quando o pagamento no site estiver disponível);</li>
-        <li>transportadora e cálculo de frete (quando o envio pelo site estiver disponível);</li>
-        <li>envio de e-mails transacionais.</li>
+        <li>hospedagem da aplicação (Vercel) e banco de dados (Supabase);</li>
+        <li>meio de pagamento (Mercado Pago), para processar pagamentos;</li>
+        <li>cálculo de frete e transportadoras (Melhor Envio), para cotar e despachar o pedido;</li>
+        <li>envio de e-mails transacionais (Google / Gmail).</li>
       </ul>
       <p>
         Também podemos compartilhar dados para cumprir a lei, atender a autoridades competentes ou
@@ -73,16 +74,18 @@ export default function Page() {
 
       <h2>5. Transferência internacional</h2>
       <p>
-        Alguns de nossos prestadores podem processar dados em servidores fora do Brasil. Nesses
-        casos, adotamos salvaguardas para garantir proteção equivalente à da legislação brasileira.
-        (Região de armazenamento a definir.)
+        Os dados de conta e de pedidos ficam armazenados em banco de dados no Brasil (São Paulo).
+        Alguns prestadores — como a hospedagem da aplicação e o envio de e-mails — podem processar
+        dados em servidores fora do Brasil. Nesses casos, adotamos salvaguardas para garantir
+        proteção equivalente à da legislação brasileira.
       </p>
 
-      <h2>6. Cookies</h2>
+      <h2>6. Cookies e armazenamento local</h2>
       <p>
-        Usamos cookies essenciais (para o funcionamento do site) e cookies de análise (para entender
-        o uso e melhorar a experiência). Você pode recusar os não essenciais nas configurações do
-        seu navegador, ciente de que alguns recursos podem deixar de funcionar.
+        Usamos apenas cookies e armazenamento local <strong>essenciais</strong> para o funcionamento
+        do site: manter você logado (sessão) e guardar os itens do seu carrinho. Não usamos cookies
+        de publicidade. Caso venhamos a adotar ferramentas de análise de uso, esta Política será
+        atualizada antes.
       </p>
 
       <h2>7. Segurança</h2>

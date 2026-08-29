@@ -2,7 +2,8 @@
  * Configuracao central do site: identidade, navegacao e contato.
  * Header e Footer leem daqui para nao duplicar links.
  *
- * TODO(Jane): confirmar e-mail oficial, CNPJ e endereco antes de producao.
+ * E-mail: usamos empoeirar@gmail.com enquanto o dominio nao tem caixa propria.
+ * Trocar para contato@empoeirar.com quando o e-mail do dominio estiver ativo.
  */
 export const siteConfig = {
   name: "Empoeirar",
@@ -11,8 +12,9 @@ export const siteConfig = {
   instagramUrl: "https://instagram.com/empoeirar",
   whatsappLabel: "(31) 98646-0734",
   whatsappUrl: "https://wa.me/5531986460734",
-  email: "contato@empoeirar.com",
-  cnpj: "a confirmar",
+  email: "empoeirar@gmail.com",
+  legalName: "Bruno Mendes Haerdy",
+  cnpj: "63.554.599/0001-25",
   city: "Belo Horizonte · MG",
 } as const;
 

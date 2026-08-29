@@ -5,7 +5,7 @@ export const metadata = { title: "Termos e condições" };
 
 export default function Page() {
   return (
-    <LegalPage title="Termos e Condições de Uso" updatedAt="19 de agosto de 2026">
+    <LegalPage title="Termos e Condições de Uso" updatedAt="29 de agosto de 2026">
       <p>
         Estes Termos regem o uso do site da Empoeirar e a compra dos nossos produtos. Ao navegar ou
         fazer um pedido, você concorda com as condições abaixo.
@@ -13,9 +13,11 @@ export default function Page() {
 
       <h2>1. Quem somos</h2>
       <p>
-        A Empoeirar produz moldes e ferramentas de madeira para ceramistas, feitos à mão, um a um.
-        CNPJ: (a preencher). Contato: <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a>{" "}
-        · WhatsApp {siteConfig.whatsappLabel} · Instagram {siteConfig.instagramHandle}.
+        A Empoeirar é a marca de {siteConfig.legalName} (microempreendedor individual — MEI), CNPJ{" "}
+        {siteConfig.cnpj}, com sede em {siteConfig.city}. Produzimos moldes e ferramentas de madeira
+        para ceramistas, feitos à mão, um a um. Contato:{" "}
+        <a href={`mailto:${siteConfig.email}`}>{siteConfig.email}</a> · WhatsApp{" "}
+        {siteConfig.whatsappLabel} · Instagram {siteConfig.instagramHandle}.
       </p>
 
       <h2>2. Produtos artesanais</h2>
@@ -40,16 +42,17 @@ export default function Page() {
 
       <h2>5. Pedidos e pagamento</h2>
       <p>
-        No momento, os pedidos são combinados pelo WhatsApp ou pelo direct do Instagram, com
-        pagamento via Pix ou dinheiro, podendo ser solicitado um sinal e o restante na entrega ou no
-        envio. Em breve, o site contará com carrinho e checkout próprios, com pagamento por Pix,
-        cartão e boleto.
+        Os pedidos são feitos pelo site: você adiciona os itens ao carrinho, informa os dados de
+        entrega e conclui o pagamento pelo Mercado Pago (Pix, cartão de crédito ou boleto). O pedido
+        é confirmado após a aprovação do pagamento, e você acompanha o andamento pela página do
+        pedido. Personalizações e dúvidas também podem ser combinadas pelo WhatsApp ou pelo direct
+        do Instagram.
       </p>
 
       <h2>6. Entrega</h2>
       <p>
-        A entrega pode ser gratuita para Belo Horizonte – MG (a confirmar). Para as demais
-        localidades, o frete é estimado no momento da compra. Consulte a{" "}
+        Enviamos para todo o Brasil por transportadora. O frete é calculado e exibido no momento da
+        compra, conforme o CEP de destino. Consulte a{" "}
         <a href="/politica-envio">Política de Envio</a> e a{" "}
         <a href="/trocas-devolucoes">Política de Trocas e Devoluções</a>.
       </p>

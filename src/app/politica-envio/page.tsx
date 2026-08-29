@@ -5,7 +5,7 @@ export const metadata = { title: "Política de envio" };
 
 export default function Page() {
   return (
-    <LegalPage title="Política de Envio" updatedAt="19 de agosto de 2026">
+    <LegalPage title="Política de Envio" updatedAt="29 de agosto de 2026">
       <p>
         Esta Política explica como funcionam a produção e o envio dos produtos da Empoeirar. Como
         cada peça é feita à mão, os prazos combinam o tempo de produção com o tempo de transporte.
@@ -19,15 +19,11 @@ export default function Page() {
       </p>
 
       <h2>2. Modalidades de entrega</h2>
-      <ul>
-        <li>
-          <strong>Belo Horizonte – MG:</strong> entrega local, que pode ser gratuita (a confirmar);
-        </li>
-        <li>
-          <strong>Demais localidades do Brasil:</strong> envio por transportadora, com frete
-          estimado no momento da compra.
-        </li>
-      </ul>
+      <p>
+        Enviamos para todo o Brasil por transportadora. O frete é calculado no momento da compra,
+        conforme o CEP de destino, e você escolhe entre as opções disponíveis antes de finalizar o
+        pedido.
+      </p>
 
       <h2>3. Prazo de transporte</h2>
       <p>
@@ -38,14 +34,16 @@ export default function Page() {
 
       <h2>4. Frete</h2>
       <p>
-        O valor do frete é calculado e exibido no momento da compra, conforme o CEP de destino. Para
-        Belo Horizonte, consulte as condições de entrega local.
+        O valor do frete é calculado e exibido no checkout, conforme o CEP de destino, com base nas
+        dimensões e no peso das peças do pedido. O valor cobrado é sempre o confirmado pelo servidor
+        no momento da compra.
       </p>
 
       <h2>5. Acompanhamento</h2>
       <p>
-        Quando o envio pelo site estiver disponível, você poderá acompanhar o status do pedido, do
-        início da produção até a entrega concluída.
+        Você acompanha o status do pedido pela página do pedido, do recebimento à entrega concluída,
+        passando pela confirmação do pagamento e pelo envio. As atualizações também são enviadas
+        para o seu e-mail.
       </p>
 
       <h2>6. Endereço de entrega</h2>
