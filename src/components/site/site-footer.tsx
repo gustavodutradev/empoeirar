@@ -11,7 +11,7 @@ export function SiteFooter() {
         {/* Marca */}
         <div className="flex flex-col gap-3">
           {/* biome-ignore lint/performance/noImgElement: logo local em public/, sem otimização remota */}
-          <img src="/logo-empoeirar.png" alt={siteConfig.name} className="h-16 w-auto" />
+          <img src="/logo-empoeirar.png" alt={siteConfig.name} className="h-16 w-auto self-start" />
           <p className="max-w-xs text-sm text-secondary-foreground/90">{siteConfig.tagline}</p>
         </div>
 

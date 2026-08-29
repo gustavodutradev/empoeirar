@@ -59,11 +59,12 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 /**
- * Um produto representativo por categoria (o primeiro publicado, por nome), para
- * ilustrar os cards da home. Retorna { categorySlug: productSlug }. Respeita a
- * RLS (só produtos publicados).
+ * Slugs dos produtos publicados de cada categoria (ordenados por nome), para
+ * ilustrar os cards da home. Retorna { categorySlug: [productSlug, ...] } — quem
+ * chama escolhe o primeiro que TENHA foto (nem todo produto tem imagem no
+ * bridge atual). Respeita a RLS (só produtos publicados).
  */
-export async function getCategoryPreviews(): Promise<Record<string, string>> {
+export async function getCategoryPreviews(): Promise<Record<string, string[]>> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("product")
@@ -73,10 +74,12 @@ export async function getCategoryPreviews(): Promise<Record<string, string>> {
   if (error) throw error;
 
   const rows = (data ?? []) as unknown as { slug: string; category: { slug: string } | null }[];
-  const out: Record<string, string> = {};
+  const out: Record<string, string[]> = {};
   for (const row of rows) {
     const cat = row.category?.slug;
-    if (cat && !out[cat]) out[cat] = row.slug; // primeiro produto de cada categoria
+    if (!cat) continue;
+    if (!out[cat]) out[cat] = [];
+    out[cat].push(row.slug);
   }
   return out;
 }

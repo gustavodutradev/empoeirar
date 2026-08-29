@@ -15,10 +15,14 @@ export default async function Home() {
   const funnel = categories.find((c) => c.is_custom_funnel);
   const highlights = products.slice(0, 4);
 
-  // Foto ilustrativa por categoria: 1ª imagem de um produto representativo.
+  // Foto ilustrativa por categoria: 1ª imagem do primeiro produto da categoria
+  // que TENHA foto (nem todo produto tem imagem no bridge atual).
   const categoryImage = (slug: string): string | undefined => {
-    const productSlug = previews[slug];
-    return productSlug ? getProductImages(productSlug)[0] : undefined;
+    for (const productSlug of previews[slug] ?? []) {
+      const image = getProductImages(productSlug)[0];
+      if (image) return image;
+    }
+    return undefined;
   };
 
   return (
