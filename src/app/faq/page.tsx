@@ -23,17 +23,30 @@ const faqs: { q: string; a: ReactNode }[] = [
   },
   {
     q: "Vocês entregam para todo o Brasil?",
-    a: "Sim. Em Belo Horizonte há entrega local (que pode ser gratuita, a confirmar). Para as demais localidades, o envio é por transportadora, com frete estimado no momento da compra.",
+    a: "Sim, enviamos para todo o Brasil por transportadora. O frete é calculado no momento da compra, conforme o CEP de destino, e você escolhe entre as opções disponíveis antes de finalizar.",
   },
   {
     q: "Como faço um pedido?",
     a: (
       <>
-        No momento, os pedidos são combinados pelo WhatsApp {siteConfig.whatsappLabel} ou pelo
-        direct do Instagram {siteConfig.instagramHandle}, com pagamento via Pix ou dinheiro. Em
-        breve, o site terá carrinho e checkout próprios.
+        Pelo próprio site: adicione os itens ao carrinho, entre com seu e-mail (enviamos um código
+        de confirmação), informe o endereço de entrega e conclua o pagamento. Veja o passo a passo
+        em{" "}
+        <Link href="/como-comprar" className="text-primary underline">
+          Como comprar
+        </Link>
+        . Personalizações também podem ser combinadas pelo WhatsApp {siteConfig.whatsappLabel} ou
+        pelo Instagram {siteConfig.instagramHandle}.
       </>
     ),
+  },
+  {
+    q: "Quais as formas de pagamento?",
+    a: "O pagamento é feito pelo Mercado Pago: Pix, cartão de crédito ou boleto. Seus dados de cartão são processados diretamente pelo Mercado Pago e não passam pelo nosso site.",
+  },
+  {
+    q: "Como acompanho meu pedido?",
+    a: "Na página do seu pedido você vê a linha do tempo, do recebimento à entrega concluída, passando pela confirmação do pagamento e pelo envio. Também enviamos atualizações para o seu e-mail a cada etapa.",
   },
   {
     q: "Vocês fazem moldes personalizados?",
