@@ -58,6 +58,29 @@ export async function getCategories(): Promise<Category[]> {
   return (data ?? []) as Category[];
 }
 
+/**
+ * Um produto representativo por categoria (o primeiro publicado, por nome), para
+ * ilustrar os cards da home. Retorna { categorySlug: productSlug }. Respeita a
+ * RLS (só produtos publicados).
+ */
+export async function getCategoryPreviews(): Promise<Record<string, string>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("product")
+    .select("slug, category:category_id(slug)")
+    .eq("status", "published")
+    .order("name");
+  if (error) throw error;
+
+  const rows = (data ?? []) as unknown as { slug: string; category: { slug: string } | null }[];
+  const out: Record<string, string> = {};
+  for (const row of rows) {
+    const cat = row.category?.slug;
+    if (cat && !out[cat]) out[cat] = row.slug; // primeiro produto de cada categoria
+  }
+  return out;
+}
+
 type ListRow = { name: string; slug: string; variants: { price_cents: number }[] };
 
 export async function getProducts(categorySlug?: string): Promise<ProductListItem[]> {

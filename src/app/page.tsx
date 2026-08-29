@@ -2,24 +2,33 @@ import Link from "next/link";
 import { CategoryCard } from "@/components/site/category-card";
 import { ProductCard } from "@/components/site/product-card";
 import { Button } from "@/components/ui/button";
-import { getCategories, getProducts } from "@/lib/queries/catalog";
+import { getProductImages } from "@/lib/product-images";
+import { getCategories, getCategoryPreviews, getProducts } from "@/lib/queries/catalog";
 
 export default async function Home() {
-  const [categories, products] = await Promise.all([getCategories(), getProducts()]);
+  const [categories, products, previews] = await Promise.all([
+    getCategories(),
+    getProducts(),
+    getCategoryPreviews(),
+  ]);
   const realCategories = categories.filter((c) => !c.is_custom_funnel);
   const funnel = categories.find((c) => c.is_custom_funnel);
   const highlights = products.slice(0, 4);
+
+  // Foto ilustrativa por categoria: 1ª imagem de um produto representativo.
+  const categoryImage = (slug: string): string | undefined => {
+    const productSlug = previews[slug];
+    return productSlug ? getProductImages(productSlug)[0] : undefined;
+  };
 
   return (
     <main className="flex flex-1 flex-col">
       {/* Hero */}
       <section className="flex flex-col items-center gap-6 px-6 py-20 text-center">
-        <div className="flex size-24 items-center justify-center rounded-full border-4 border-secondary bg-card">
-          <span className="font-display text-3xl text-primary">E</span>
-        </div>
-        <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">@empoeirar</p>
-        <h1 className="max-w-3xl text-5xl leading-tight sm:text-6xl">Empoeirar</h1>
-        <p className="max-w-2xl text-lg leading-relaxed text-foreground/80">
+        <h1 className="sr-only">Empoeirar</h1>
+        {/* biome-ignore lint/performance/noImgElement: logo local em public/, sem otimização remota */}
+        <img src="/logo-empoeirar.png" alt="Empoeirar" className="h-44 w-auto sm:h-52" />
+        <p className="max-w-2xl text-lg leading-relaxed text-foreground/90">
           Moldes e ferramentas de madeira para ceramistas, feitos à mão, um a um, em MDF. Puxadores
           entalhados para desmoldar sem marcar a borda das suas peças.
         </p>
@@ -45,6 +54,7 @@ export default async function Home() {
                 name={category.name}
                 description={category.description}
                 href={`/produtos?categoria=${category.slug}`}
+                image={categoryImage(category.slug)}
               />
             ))}
             {funnel ? (
@@ -53,6 +63,7 @@ export default async function Home() {
                 description={funnel.description}
                 href="/personalizado"
                 cta="Encomendar o meu"
+                image={categoryImage(funnel.slug) ?? getProductImages("molde-personalizado")[0]}
               />
             ) : null}
           </div>

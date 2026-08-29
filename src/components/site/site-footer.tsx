@@ -10,8 +10,9 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
         {/* Marca */}
         <div className="flex flex-col gap-3">
-          <span className="font-display text-2xl text-primary">{siteConfig.name}</span>
-          <p className="max-w-xs text-sm text-secondary-foreground/80">{siteConfig.tagline}</p>
+          {/* biome-ignore lint/performance/noImgElement: logo local em public/, sem otimização remota */}
+          <img src="/logo-empoeirar.png" alt={siteConfig.name} className="h-16 w-auto" />
+          <p className="max-w-xs text-sm text-secondary-foreground/90">{siteConfig.tagline}</p>
         </div>
 
         {/* Colunas de navegacao */}

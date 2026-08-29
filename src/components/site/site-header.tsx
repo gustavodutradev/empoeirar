@@ -8,8 +8,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-        <Link href="/" className="font-display text-2xl text-primary">
-          {siteConfig.name}
+        <Link href="/" aria-label={siteConfig.name} className="shrink-0">
+          {/* biome-ignore lint/performance/noImgElement: logo local em public/, sem otimização remota */}
+          <img src="/logo-empoeirar.png" alt={siteConfig.name} className="h-11 w-auto" />
         </Link>
 
         <div className="flex items-center gap-4 sm:gap-6">

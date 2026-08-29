@@ -20,14 +20,14 @@
   --popover: #fbfaf3;
   --popover-foreground: #111111;
 
-  --primary: #50545e; /* ardosia — botoes/titulos */
+  --primary: #363a42; /* ardosia mais escura — titulos/botoes com mais contraste */
   --primary-foreground: #f5f4ec;
 
   --secondary: #d5c2a5; /* bege/tan — blocos e rodape */
-  --secondary-foreground: #3a3730;
+  --secondary-foreground: #322f28;
 
   --muted: #e8e5d8;
-  --muted-foreground: #504b42; /* escurecido: mais contraste no texto secundario */
+  --muted-foreground: #37332b; /* bem escuro: alto contraste no texto secundario */
 
   --accent: #d5c2a5;
   --accent-foreground: #33302a;
