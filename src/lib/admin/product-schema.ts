@@ -29,5 +29,17 @@ export const productInputSchema = z.object({
   variants: z.array(variantInputSchema).min(1, "O produto precisa de ao menos uma variante."),
 });
 
+/** Criação: sem id de produto; slug opcional (vazio = gerado do nome). */
+export const productCreateSchema = z.object({
+  name: z.string().trim().min(1, "Informe o nome.").max(160),
+  slug: z.string().trim().max(160).optional(),
+  description: z.string().max(2000).nullable(),
+  material_care: z.string().max(2000).nullable(),
+  status: z.enum(["draft", "published", "archived"]),
+  category_id: z.uuid("Selecione a categoria."),
+  variants: z.array(variantInputSchema).min(1, "O produto precisa de ao menos uma variante."),
+});
+
 export type VariantInput = z.infer<typeof variantInputSchema>;
 export type ProductInput = z.infer<typeof productInputSchema>;
+export type ProductCreateInput = z.infer<typeof productCreateSchema>;

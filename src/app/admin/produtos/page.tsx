@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { requireAdmin } from "@/lib/admin/guard";
 
 export const metadata: Metadata = { title: "Admin · Produtos" };
@@ -23,10 +24,17 @@ export default async function AdminProductsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl text-primary">Produtos</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {products?.length ?? 0} produto(s). Clique para editar campos, preços, peso e dimensões.
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl text-primary">Produtos</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {products?.length ?? 0} produto(s). Clique para editar campos, preços, peso e dimensões.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/produtos/novo">+ Novo produto</Link>
+        </Button>
+      </div>
 
       <div className="mt-6 overflow-x-auto rounded-xl border">
         <table className="w-full min-w-[520px] text-sm">

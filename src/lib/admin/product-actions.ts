@@ -1,9 +1,36 @@
 "use server";
 
-import { productInputSchema } from "@/lib/admin/product-schema";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { productCreateSchema, productInputSchema } from "@/lib/admin/product-schema";
 import { createClient } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
+
+/** Gera um slug seguro: sem acento, minúsculo, só [a-z0-9-]. */
+function slugify(input: string): string {
+  return (
+    input
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 120) || "produto"
+  );
+}
+
+/** Slug único: se o base já existe, tenta base-2, base-3… (constraint é o backstop). */
+async function uniqueSlug(supabase: SupabaseClient, base: string): Promise<string> {
+  const root = slugify(base);
+  const { data } = await supabase.from("product").select("slug").like("slug", `${root}%`);
+  const taken = new Set((data ?? []).map((r: { slug: string }) => r.slug));
+  if (!taken.has(root)) return root;
+  for (let i = 2; i < 1000; i++) {
+    const candidate = `${root}-${i}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return `${root}-${Date.now()}`;
+}
 
 /**
  * Salva as edições de um produto (campos + variantes). Fronteira:
@@ -75,4 +102,59 @@ export async function saveProduct(input: unknown): Promise<Result> {
   }
 
   return { ok: true };
+}
+
+type CreateResult = { ok: true; id: string } | { ok: false; error: string };
+
+/**
+ * Cria um produto com suas variantes (atômico, via RPC create_product).
+ * Fronteira: getUser + is_admin() (a RPC também revalida is_admin no banco).
+ * A primeira variante vira a default. Slug gerado do nome se não informado.
+ */
+export async function createProduct(input: unknown): Promise<CreateResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) return { ok: false, error: "Sem permissão." };
+
+  const parsed = productCreateSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+  const p = parsed.data;
+
+  const slug = await uniqueSlug(supabase, p.slug?.trim() || p.name);
+
+  const { data, error } = await supabase.rpc("create_product", {
+    p_name: p.name,
+    p_slug: slug,
+    p_description: p.description,
+    p_material_care: p.material_care,
+    p_status: p.status,
+    p_category_id: p.category_id,
+    p_variants: p.variants.map((v, i) => ({
+      label: v.label,
+      price_cents: v.price_cents,
+      weight_grams: v.weight_grams,
+      length_mm: v.length_mm,
+      width_mm: v.width_mm,
+      height_mm: v.height_mm,
+      sort_order: i,
+    })),
+  });
+
+  if (error || typeof data !== "string") {
+    console.error("[createProduct]", error?.message ?? "retorno inesperado");
+    return {
+      ok: false,
+      error: "Não foi possível criar o produto. Verifique o slug e tente de novo.",
+    };
+  }
+
+  return { ok: true, id: data };
 }

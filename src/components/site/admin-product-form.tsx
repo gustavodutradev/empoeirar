@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { saveProduct } from "@/lib/admin/product-actions";
+import { createProduct, saveProduct } from "@/lib/admin/product-actions";
 
 type Product = {
   id: string;
@@ -55,22 +55,34 @@ function toRow(v: Variant): Row {
   };
 }
 
+const EMPTY_ROW: Row = { label: "", price: "0.00", weight: "", length: "", width: "", height: "" };
+
+/**
+ * Formulário duplo: EDITA um produto (quando `product` é passado) ou CRIA um
+ * novo (quando `product` é undefined). No criar, o slug é opcional (gerado do
+ * nome) e a primeira variante vira a default.
+ */
 export function AdminProductForm({
   product,
-  variants,
+  variants = [],
   categories,
 }: {
-  product: Product;
-  variants: Variant[];
+  product?: Product;
+  variants?: Variant[];
   categories: Category[];
 }) {
   const router = useRouter();
-  const [name, setName] = useState(product.name);
-  const [description, setDescription] = useState(product.description ?? "");
-  const [care, setCare] = useState(product.material_care ?? "");
-  const [status, setStatus] = useState(product.status);
-  const [categoryId, setCategoryId] = useState(product.category_id);
-  const [rows, setRows] = useState<Row[]>(variants.map(toRow));
+  const isEdit = Boolean(product);
+
+  const [name, setName] = useState(product?.name ?? "");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState(product?.description ?? "");
+  const [care, setCare] = useState(product?.material_care ?? "");
+  const [status, setStatus] = useState(product?.status ?? "draft");
+  const [categoryId, setCategoryId] = useState(product?.category_id ?? categories[0]?.id ?? "");
+  const [rows, setRows] = useState<Row[]>(
+    variants.length > 0 ? variants.map(toRow) : [{ ...EMPTY_ROW }],
+  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -79,37 +91,58 @@ export function AdminProductForm({
   }
 
   function addRow() {
-    setRows((rs) => [
-      ...rs,
-      { label: "", price: "0.00", weight: "", length: "", width: "", height: "" },
-    ]);
+    setRows((rs) => [...rs, { ...EMPTY_ROW }]);
   }
 
   async function save() {
     setSaving(true);
     setMessage(null);
-    const res = await saveProduct({
-      id: product.id,
+
+    const variantsPayload = rows.map((r, i) => ({
+      id: r.id,
+      label: r.label.trim(),
+      price_cents: Math.round(Number(r.price.replace(",", ".") || "0") * 100) || 0,
+      weight_grams: intOrNull(r.weight),
+      length_mm: intOrNull(r.length),
+      width_mm: intOrNull(r.width),
+      height_mm: intOrNull(r.height),
+      sort_order: i,
+    }));
+
+    if (isEdit && product) {
+      const res = await saveProduct({
+        id: product.id,
+        name: name.trim(),
+        description: description.trim() || null,
+        material_care: care.trim() || null,
+        status,
+        category_id: categoryId,
+        variants: variantsPayload,
+      });
+      setSaving(false);
+      if (res.ok) {
+        setMessage({ ok: true, text: "Alterações salvas." });
+        router.refresh();
+      } else {
+        setMessage({ ok: false, text: res.error });
+      }
+      return;
+    }
+
+    // Criação
+    const res = await createProduct({
       name: name.trim(),
+      slug: slug.trim() || undefined,
       description: description.trim() || null,
       material_care: care.trim() || null,
       status,
       category_id: categoryId,
-      variants: rows.map((r, i) => ({
-        id: r.id,
-        label: r.label.trim(),
-        price_cents: Math.round(Number(r.price.replace(",", ".") || "0") * 100) || 0,
-        weight_grams: intOrNull(r.weight),
-        length_mm: intOrNull(r.length),
-        width_mm: intOrNull(r.width),
-        height_mm: intOrNull(r.height),
-        sort_order: i,
-      })),
+      variants: variantsPayload.map(({ id: _id, ...rest }) => rest),
     });
     setSaving(false);
     if (res.ok) {
-      setMessage({ ok: true, text: "Alterações salvas." });
-      router.refresh();
+      setMessage({ ok: true, text: "Produto criado! Redirecionando…" });
+      router.push(`/admin/produtos/${res.id}`);
     } else {
       setMessage({ ok: false, text: res.error });
     }
@@ -126,6 +159,20 @@ export function AdminProductForm({
           <span className="font-medium">Nome</span>
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </label>
+
+        {!isEdit ? (
+          // biome-ignore lint/a11y/noLabelWithoutControl: input via children
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">
+              Slug <span className="text-muted-foreground">(opcional — gerado do nome)</span>
+            </span>
+            <Input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="ex.: conjunto-minas-novas"
+            />
+          </label>
+        ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5 text-sm">
@@ -189,6 +236,7 @@ export function AdminProductForm({
         <p className="text-xs text-muted-foreground">
           Preço em reais, peso em gramas, dimensões em milímetros. O peso alimenta o cálculo de
           frete — preencha para o frete ficar preciso.
+          {!isEdit ? " A primeira variante é a pré-selecionada na página do produto." : ""}
         </p>
 
         <div className="flex flex-col gap-4">
@@ -239,7 +287,13 @@ export function AdminProductForm({
 
       <div className="flex items-center gap-4">
         <Button type="button" size="lg" onClick={save} disabled={saving}>
-          {saving ? "Salvando…" : "Salvar alterações"}
+          {saving
+            ? isEdit
+              ? "Salvando…"
+              : "Criando…"
+            : isEdit
+              ? "Salvar alterações"
+              : "Criar produto"}
         </Button>
         {message ? (
           <span className={message.ok ? "text-sm text-primary" : "text-sm text-destructive"}>
