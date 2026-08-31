@@ -25,6 +25,13 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Upload de foto de produto vai por server action. Mesmo comprimindo no
+  // cliente, damos folga no limite de body (default 1MB).
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "4mb",
+    },
+  },
   async headers() {
     return [
       {

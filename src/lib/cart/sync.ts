@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CartItem } from "@/lib/cart/store";
 import { sizeLabel } from "@/lib/format";
-import { getProductImages } from "@/lib/product-images";
+import { getProductImages, productImageUrl } from "@/lib/product-images";
 
 /**
  * Sincronização do carrinho com o banco (usuário logado). O banco guarda só
@@ -34,6 +34,20 @@ export async function fetchServerCart(supabase: SupabaseClient): Promise<CartIte
     .in("id", productIds);
   const prods = (prodsData ?? []) as Prod[];
 
+  // Foto de capa por produto: do product_image (Storage) se houver, senão bridge.
+  const { data: imgRows } = await supabase
+    .from("product_image")
+    .select("product_id, storage_path, is_primary, sort_order")
+    .in("product_id", productIds)
+    .order("is_primary", { ascending: false })
+    .order("sort_order", { ascending: true });
+  const coverByProduct = new Map<string, string>();
+  for (const r of (imgRows ?? []) as { product_id: string; storage_path: string }[]) {
+    if (!coverByProduct.has(r.product_id)) {
+      coverByProduct.set(r.product_id, productImageUrl(r.storage_path));
+    }
+  }
+
   const varById = new Map(vars.map((v) => [v.id, v]));
   const prodById = new Map(prods.map((p) => [p.id, p]));
 
@@ -49,7 +63,7 @@ export async function fetchServerCart(supabase: SupabaseClient): Promise<CartIte
       variantLabel: sizeLabel(v.label),
       productName: p.name,
       productSlug: p.slug,
-      image: getProductImages(p.slug)[0],
+      image: coverByProduct.get(p.id) ?? getProductImages(p.slug)[0],
     });
   }
   return out;

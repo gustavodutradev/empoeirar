@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCarousel } from "@/components/site/product-carousel";
 import { ProductPurchase } from "@/components/site/product-purchase";
-import { getProductImages } from "@/lib/product-images";
 import { getProductBySlug } from "@/lib/queries/catalog";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -23,7 +22,7 @@ export default async function ProductPage({ params }: Params) {
   const product = await getProductBySlug(slug);
   if (!product) notFound();
 
-  const images = getProductImages(product.slug);
+  const images = product.images;
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">

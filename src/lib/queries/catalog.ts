@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getProductImages, productImageUrl } from "@/lib/product-images";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -5,6 +7,43 @@ import { createClient } from "@/lib/supabase/server";
  * TODA query respeita a RLS: o publico so enxerga produtos `published` e as
  * variantes deles.
  */
+
+/**
+ * URLs de foto por produto: do product_image (Storage) quando houver; senão cai
+ * no mapa fixo (bridge) por slug. Uma query batelada (.in) para vários produtos.
+ * Assim a migração para o Storage é gradual — produtos sem foto no banco seguem
+ * usando o bridge.
+ */
+async function imagesByProduct(
+  supabase: SupabaseClient,
+  products: { id: string; slug: string }[],
+): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>();
+  if (products.length === 0) return result;
+
+  const { data } = await supabase
+    .from("product_image")
+    .select("product_id, storage_path, is_primary, sort_order")
+    .in(
+      "product_id",
+      products.map((p) => p.id),
+    )
+    .order("is_primary", { ascending: false })
+    .order("sort_order", { ascending: true });
+
+  const db = new Map<string, string[]>();
+  for (const r of (data ?? []) as { product_id: string; storage_path: string }[]) {
+    const arr = db.get(r.product_id) ?? [];
+    arr.push(productImageUrl(r.storage_path));
+    db.set(r.product_id, arr);
+  }
+
+  for (const p of products) {
+    const fromDb = db.get(p.id);
+    result.set(p.id, fromDb && fromDb.length > 0 ? fromDb : getProductImages(p.slug));
+  }
+  return result;
+}
 
 export type Category = {
   id: string;
@@ -38,6 +77,7 @@ export type ProductWithVariants = {
   material_care: string | null;
   category: { name: string; slug: string } | null;
   variants: ProductVariant[];
+  images: string[];
 };
 
 /** Item enxuto para cards/listagem: preco "a partir de" e se ha opcoes. */
@@ -46,6 +86,7 @@ export type ProductListItem = {
   slug: string;
   priceFromCents: number;
   hasOptions: boolean;
+  image?: string;
 };
 
 export async function getCategories(): Promise<Category[]> {
@@ -59,32 +100,53 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 /**
- * Slugs dos produtos publicados de cada categoria (ordenados por nome), para
- * ilustrar os cards da home. Retorna { categorySlug: [productSlug, ...] } — quem
- * chama escolhe o primeiro que TENHA foto (nem todo produto tem imagem no
- * bridge atual). Respeita a RLS (só produtos publicados).
+ * Foto de capa por categoria (a 1ª foto do primeiro produto publicado da
+ * categoria que TENHA imagem, do banco ou do bridge). Retorna
+ * { categorySlug: imageUrl }. Respeita a RLS (só produtos publicados).
  */
-export async function getCategoryPreviews(): Promise<Record<string, string[]>> {
+export async function getCategoryPreviews(): Promise<Record<string, string>> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("product")
-    .select("slug, category:category_id(slug)")
+    .select("id, slug, category:category_id(slug)")
     .eq("status", "published")
     .order("name");
   if (error) throw error;
 
-  const rows = (data ?? []) as unknown as { slug: string; category: { slug: string } | null }[];
-  const out: Record<string, string[]> = {};
+  const rows = (data ?? []) as unknown as {
+    id: string;
+    slug: string;
+    category: { slug: string } | null;
+  }[];
+
+  const byCat = new Map<string, { id: string; slug: string }[]>();
   for (const row of rows) {
     const cat = row.category?.slug;
     if (!cat) continue;
-    if (!out[cat]) out[cat] = [];
-    out[cat].push(row.slug);
+    const list = byCat.get(cat) ?? [];
+    list.push({ id: row.id, slug: row.slug });
+    byCat.set(cat, list);
+  }
+
+  const imgs = await imagesByProduct(
+    supabase,
+    rows.map((r) => ({ id: r.id, slug: r.slug })),
+  );
+
+  const out: Record<string, string> = {};
+  for (const [cat, prods] of byCat) {
+    for (const p of prods) {
+      const url = imgs.get(p.id)?.[0];
+      if (url) {
+        out[cat] = url;
+        break;
+      }
+    }
   }
   return out;
 }
 
-type ListRow = { name: string; slug: string; variants: { price_cents: number }[] };
+type ListRow = { id: string; name: string; slug: string; variants: { price_cents: number }[] };
 
 export async function getProducts(categorySlug?: string): Promise<ProductListItem[]> {
   const supabase = await createClient();
@@ -103,7 +165,7 @@ export async function getProducts(categorySlug?: string): Promise<ProductListIte
 
   const base = supabase
     .from("product")
-    .select("name, slug, variants:product_variant(price_cents)")
+    .select("id, name, slug, variants:product_variant(price_cents)")
     .eq("status", "published");
 
   const { data, error } = categoryId
@@ -112,14 +174,19 @@ export async function getProducts(categorySlug?: string): Promise<ProductListIte
   if (error) throw error;
 
   const rows = (data ?? []) as unknown as ListRow[];
-  return rows
-    .filter((r) => r.variants.length > 0)
-    .map((r) => ({
-      name: r.name,
-      slug: r.slug,
-      priceFromCents: Math.min(...r.variants.map((v) => v.price_cents)),
-      hasOptions: r.variants.length > 1,
-    }));
+  const valid = rows.filter((r) => r.variants.length > 0);
+  const imgs = await imagesByProduct(
+    supabase,
+    valid.map((r) => ({ id: r.id, slug: r.slug })),
+  );
+
+  return valid.map((r) => ({
+    name: r.name,
+    slug: r.slug,
+    priceFromCents: Math.min(...r.variants.map((v) => v.price_cents)),
+    hasOptions: r.variants.length > 1,
+    image: imgs.get(r.id)?.[0],
+  }));
 }
 
 export async function getProductBySlug(slug: string): Promise<ProductWithVariants | null> {
@@ -136,5 +203,8 @@ export async function getProductBySlug(slug: string): Promise<ProductWithVariant
   const product = data as unknown as ProductWithVariants;
   // Ordena as variantes (o embed nao garante ordem).
   product.variants = [...product.variants].sort((a, b) => a.sort_order - b.sort_order);
+
+  const imgs = await imagesByProduct(supabase, [{ id: product.id, slug: product.slug }]);
+  product.images = imgs.get(product.id) ?? [];
   return product;
 }

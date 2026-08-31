@@ -15,16 +15,6 @@ export default async function Home() {
   const funnel = categories.find((c) => c.is_custom_funnel);
   const highlights = products.slice(0, 4);
 
-  // Foto ilustrativa por categoria: 1ª imagem do primeiro produto da categoria
-  // que TENHA foto (nem todo produto tem imagem no bridge atual).
-  const categoryImage = (slug: string): string | undefined => {
-    for (const productSlug of previews[slug] ?? []) {
-      const image = getProductImages(productSlug)[0];
-      if (image) return image;
-    }
-    return undefined;
-  };
-
   return (
     <main className="flex flex-1 flex-col">
       {/* Hero */}
@@ -58,7 +48,7 @@ export default async function Home() {
                 name={category.name}
                 description={category.description}
                 href={`/produtos?categoria=${category.slug}`}
-                image={categoryImage(category.slug)}
+                image={previews[category.slug]}
               />
             ))}
             {funnel ? (
@@ -67,7 +57,7 @@ export default async function Home() {
                 description={funnel.description}
                 href="/personalizado"
                 cta="Encomendar o meu"
-                image={categoryImage(funnel.slug) ?? getProductImages("molde-personalizado")[0]}
+                image={previews[funnel.slug] ?? getProductImages("molde-personalizado")[0]}
               />
             ) : null}
           </div>

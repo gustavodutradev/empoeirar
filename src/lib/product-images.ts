@@ -110,3 +110,13 @@ const imageBase = isLocalSupabase ? "/produtos" : `${url}/storage/v1/object/publ
 export function getProductImages(slug: string): string[] {
   return (productImages[slug] ?? []).map((f) => `${imageBase}/${encodeURIComponent(f)}`);
 }
+
+/**
+ * URL pública de uma foto gravada no Storage (tabela product_image.storage_path).
+ * O path é gerado por nós (uuid + extensão), então só tem caracteres seguros;
+ * ainda assim encodamos cada segmento por garantia.
+ */
+export function productImageUrl(storagePath: string): string {
+  const encoded = storagePath.split("/").map(encodeURIComponent).join("/");
+  return `${imageBase}/${encoded}`;
+}

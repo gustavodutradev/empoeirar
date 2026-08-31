@@ -1,14 +1,19 @@
 import Link from "next/link";
 import { ProductImage } from "@/components/site/product-image";
 import { formatBRL } from "@/lib/format";
-import { getProductImages } from "@/lib/product-images";
 
 export function ProductCard({
   product,
 }: {
-  product: { name: string; slug: string; priceFromCents: number; hasOptions: boolean };
+  product: {
+    name: string;
+    slug: string;
+    priceFromCents: number;
+    hasOptions: boolean;
+    image?: string;
+  };
 }) {
-  const [cover] = getProductImages(product.slug);
+  const cover = product.image;
   return (
     <Link
       href={`/produtos/${product.slug}`}
