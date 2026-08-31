@@ -158,3 +158,58 @@ export async function createProduct(input: unknown): Promise<CreateResult> {
 
   return { ok: true, id: data };
 }
+
+/**
+ * Remove uma variante PERSISTIDA (edição). Proteções:
+ *  - não deixa o produto sem variante (mínimo 1);
+ *  - se era a default, promove a próxima (por sort_order) a default;
+ *  - a FK order_item.variant_id é `on delete restrict`: se a variante já está em
+ *    algum pedido, o delete falha e devolvemos um erro amigável (não se apaga
+ *    histórico de pedido).
+ */
+export async function deleteVariant(variantId: string): Promise<Result> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) return { ok: false, error: "Sem permissão." };
+
+  const { data: v } = await supabase
+    .from("product_variant")
+    .select("id, product_id, is_default")
+    .eq("id", variantId)
+    .maybeSingle();
+  if (!v) return { ok: false, error: "Variante não encontrada." };
+
+  const { count } = await supabase
+    .from("product_variant")
+    .select("id", { count: "exact", head: true })
+    .eq("product_id", v.product_id);
+  if ((count ?? 0) <= 1) {
+    return { ok: false, error: "O produto precisa de ao menos uma variante." };
+  }
+
+  const { error: delErr } = await supabase.from("product_variant").delete().eq("id", variantId);
+  if (delErr) {
+    console.error("[deleteVariant]", delErr.message);
+    return { ok: false, error: "Não é possível remover: essa variante já está em pedidos." };
+  }
+
+  if (v.is_default) {
+    const { data: next } = await supabase
+      .from("product_variant")
+      .select("id")
+      .eq("product_id", v.product_id)
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (next) {
+      await supabase.from("product_variant").update({ is_default: true }).eq("id", next.id);
+    }
+  }
+
+  return { ok: true };
+}

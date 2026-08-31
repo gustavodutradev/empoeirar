@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createProduct, saveProduct } from "@/lib/admin/product-actions";
+import { createProduct, deleteVariant, saveProduct } from "@/lib/admin/product-actions";
 
 type Product = {
   id: string;
@@ -92,6 +92,26 @@ export function AdminProductForm({
 
   function addRow() {
     setRows((rs) => [...rs, { ...EMPTY_ROW }]);
+  }
+
+  async function removeRow(i: number) {
+    if (rows.length <= 1) {
+      setMessage({ ok: false, text: "O produto precisa de ao menos uma variante." });
+      return;
+    }
+    const row = rows[i];
+    // Variante já salva (tem id): apaga no banco antes de remover da tela.
+    if (row?.id) {
+      setSaving(true);
+      setMessage(null);
+      const res = await deleteVariant(row.id);
+      setSaving(false);
+      if (!res.ok) {
+        setMessage({ ok: false, text: res.error });
+        return;
+      }
+    }
+    setRows((rs) => rs.filter((_, idx) => idx !== i));
   }
 
   async function save() {
@@ -241,45 +261,56 @@ export function AdminProductForm({
 
         <div className="flex flex-col gap-4">
           {rows.map((row, i) => (
-            <div
-              key={row.id ?? `novo-${i}`}
-              className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr]"
-            >
-              <LabeledInput
-                label="Rótulo"
-                value={row.label}
-                onChange={(v) => setRow(i, { label: v })}
-              />
-              <LabeledInput
-                label="Preço R$"
-                value={row.price}
-                onChange={(v) => setRow(i, { price: v })}
-                inputMode="decimal"
-              />
-              <LabeledInput
-                label="Peso (g)"
-                value={row.weight}
-                onChange={(v) => setRow(i, { weight: v })}
-                inputMode="numeric"
-              />
-              <LabeledInput
-                label="Compr. (mm)"
-                value={row.length}
-                onChange={(v) => setRow(i, { length: v })}
-                inputMode="numeric"
-              />
-              <LabeledInput
-                label="Larg. (mm)"
-                value={row.width}
-                onChange={(v) => setRow(i, { width: v })}
-                inputMode="numeric"
-              />
-              <LabeledInput
-                label="Alt. (mm)"
-                value={row.height}
-                onChange={(v) => setRow(i, { height: v })}
-                inputMode="numeric"
-              />
+            <div key={row.id ?? `novo-${i}`} className="rounded-lg border p-3">
+              {rows.length > 1 ? (
+                <div className="mb-2 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => removeRow(i)}
+                    className="text-xs text-destructive hover:underline disabled:opacity-50"
+                  >
+                    Remover variante
+                  </button>
+                </div>
+              ) : null}
+              <div className="grid gap-2 sm:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr]">
+                <LabeledInput
+                  label="Rótulo"
+                  value={row.label}
+                  onChange={(v) => setRow(i, { label: v })}
+                />
+                <LabeledInput
+                  label="Preço R$"
+                  value={row.price}
+                  onChange={(v) => setRow(i, { price: v })}
+                  inputMode="decimal"
+                />
+                <LabeledInput
+                  label="Peso (g)"
+                  value={row.weight}
+                  onChange={(v) => setRow(i, { weight: v })}
+                  inputMode="numeric"
+                />
+                <LabeledInput
+                  label="Compr. (mm)"
+                  value={row.length}
+                  onChange={(v) => setRow(i, { length: v })}
+                  inputMode="numeric"
+                />
+                <LabeledInput
+                  label="Larg. (mm)"
+                  value={row.width}
+                  onChange={(v) => setRow(i, { width: v })}
+                  inputMode="numeric"
+                />
+                <LabeledInput
+                  label="Alt. (mm)"
+                  value={row.height}
+                  onChange={(v) => setRow(i, { height: v })}
+                  inputMode="numeric"
+                />
+              </div>
             </div>
           ))}
         </div>
