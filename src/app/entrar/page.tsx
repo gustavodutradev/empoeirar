@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 
 export default function EntrarPage() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-16">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10 sm:px-6 sm:py-16">
       <div className="mb-8 text-center">
-        <h1 className="font-display text-4xl text-primary">Entrar</h1>
+        <h1 className="font-display text-3xl text-primary sm:text-4xl">Entrar</h1>
         <p className="mt-2 text-muted-foreground">Acesse sua conta para acompanhar seus pedidos.</p>
       </div>
 

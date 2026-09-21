@@ -10,9 +10,9 @@ export const metadata = {
 
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6 sm:py-16">
       <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">Quem somos</p>
-      <h1 className="mt-2 font-display text-4xl text-primary sm:text-5xl">
+      <h1 className="mt-2 font-display text-3xl text-primary sm:text-5xl">
         Feitos à mão, um a um.
       </h1>
 

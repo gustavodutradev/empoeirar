@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Arapey, Fraunces } from "next/font/google";
 import { CartSync } from "@/components/site/cart-sync";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -29,6 +29,11 @@ export const metadata: Metadata = {
   },
   description:
     "Moldes e ferramentas de madeira para ceramistas: puxadores, conjuntos orgânicos, moldes geométricos e lúdicos, e peças especiais.",
+};
+
+// Cor da barra do navegador no mobile (Chrome Android / Safari) = creme do site.
+export const viewport: Viewport = {
+  themeColor: "#f2f1e8",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

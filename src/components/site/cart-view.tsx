@@ -126,25 +126,32 @@ export function CartView() {
         {items.map((item) => {
           const detail = details[item.variantId];
           return (
-            <li key={item.variantId} className="flex gap-4 py-4">
+            <li key={item.variantId} className="flex gap-3 py-5 sm:gap-4">
               <ProductImage
                 name={item.productName}
                 src={item.image}
-                className="size-24 shrink-0 rounded-lg border"
+                className="size-20 shrink-0 rounded-lg border sm:size-24"
               />
 
-              <div className="flex flex-1 flex-col gap-1">
-                <Link
-                  href={`/produtos/${item.productSlug}`}
-                  className="font-display text-lg text-primary hover:underline"
-                >
-                  {item.productName}
-                </Link>
-                <span className="text-sm text-muted-foreground">{item.variantLabel}</span>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                {/* Nome + total da linha na mesma linha: no mobile nao sobra
+                    largura para uma coluna de preco separada. */}
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={`/produtos/${item.productSlug}`}
+                    className="font-display text-lg leading-snug text-primary hover:underline"
+                  >
+                    {item.productName}
+                  </Link>
+                  <span className="shrink-0 font-medium tabular-nums">
+                    {formatBRL(item.priceCents * item.quantity)}
+                  </span>
+                </div>
+                <span className="text-base text-muted-foreground">{item.variantLabel}</span>
 
                 {/* Detalhe: conteudo do conjunto OU dimensoes do item */}
                 {detail?.isSet && detail.setItems.length > 0 ? (
-                  <div className="mt-0.5 text-xs text-muted-foreground">
+                  <div className="mt-0.5 text-sm text-muted-foreground">
                     <span className="font-medium text-foreground/70">Contém:</span>
                     <ul className="mt-0.5 flex flex-col gap-0.5">
                       {detail.setItems.map((s) => (
@@ -156,28 +163,33 @@ export function CartView() {
                     </ul>
                   </div>
                 ) : detail && !detail.isSet && detail.dims ? (
-                  <span className="text-xs text-muted-foreground">{detail.dims}</span>
+                  <span className="text-sm text-muted-foreground">{detail.dims}</span>
                 ) : null}
 
-                <span className="mt-1 text-sm">{formatBRL(item.priceCents)}</span>
+                <span className="mt-1 text-base tabular-nums">
+                  {formatBRL(item.priceCents)}
+                  {item.quantity > 1 ? <span className="text-muted-foreground"> cada</span> : null}
+                </span>
 
-                <div className="mt-2 flex items-center gap-4">
+                <div className="mt-2 flex items-center justify-between gap-4 sm:justify-start">
                   <div className="flex items-center rounded-lg border">
                     <button
                       type="button"
                       onClick={() => setQuantity(item.variantId, item.quantity - 1)}
                       disabled={item.quantity <= 1}
-                      aria-label="Diminuir quantidade"
-                      className="flex size-8 items-center justify-center rounded-l-lg text-primary transition-colors hover:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent"
+                      aria-label={`Diminuir quantidade de ${item.productName}`}
+                      className="flex size-10 items-center justify-center rounded-l-lg text-primary transition-colors hover:bg-secondary active:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       <Minus className="size-4" />
                     </button>
-                    <span className="w-8 text-center text-sm tabular-nums">{item.quantity}</span>
+                    <span className="w-9 text-center tabular-nums" aria-live="polite">
+                      {item.quantity}
+                    </span>
                     <button
                       type="button"
                       onClick={() => setQuantity(item.variantId, item.quantity + 1)}
-                      aria-label="Aumentar quantidade"
-                      className="flex size-8 items-center justify-center rounded-r-lg text-primary transition-colors hover:bg-secondary"
+                      aria-label={`Aumentar quantidade de ${item.productName}`}
+                      className="flex size-10 items-center justify-center rounded-r-lg text-primary transition-colors hover:bg-secondary active:bg-secondary"
                     >
                       <Plus className="size-4" />
                     </button>
@@ -186,16 +198,12 @@ export function CartView() {
                   <button
                     type="button"
                     onClick={() => removeItem(item.variantId)}
-                    className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-destructive"
+                    className="flex min-h-10 items-center gap-1.5 px-1 text-sm text-muted-foreground transition-colors hover:text-destructive"
                   >
                     <Trash2 className="size-4" />
                     Remover
                   </button>
                 </div>
-              </div>
-
-              <div className="text-right font-medium tabular-nums">
-                {formatBRL(item.priceCents * item.quantity)}
               </div>
             </li>
           );
@@ -203,27 +211,27 @@ export function CartView() {
       </ul>
 
       {/* Resumo */}
-      <aside className="w-full shrink-0 rounded-xl border bg-card p-6 lg:w-80">
+      <aside className="w-full shrink-0 rounded-xl border bg-card p-5 sm:p-6 lg:sticky lg:top-24 lg:w-80">
         <h2 className="font-display text-xl text-primary">Resumo</h2>
-        <div className="mt-4 flex justify-between text-sm">
+        <div className="mt-4 flex justify-between text-base">
           <span className="text-muted-foreground">Subtotal</span>
           <span className="font-medium tabular-nums">{formatBRL(total)}</span>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground">
           O frete é calculado no checkout, conforme o CEP.
         </p>
 
-        <Button asChild size="lg" className="mt-6 w-full">
+        <Button asChild size="lg" className="mt-6 w-full text-base">
           <Link href="/checkout">Finalizar compra</Link>
         </Button>
-        <p className="mt-2 text-center text-xs text-muted-foreground">
+        <p className="mt-2 text-center text-sm text-muted-foreground">
           Você precisa estar logado para concluir.
         </p>
 
         <button
           type="button"
           onClick={clear}
-          className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-destructive"
+          className="mt-3 min-h-10 w-full text-center text-sm text-muted-foreground hover:text-destructive"
         >
           Limpar carrinho
         </button>

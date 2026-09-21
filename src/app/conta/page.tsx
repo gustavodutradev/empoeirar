@@ -27,9 +27,9 @@ export default async function ContaPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-      <h1 className="font-display text-4xl text-primary">Minha conta</h1>
-      <p className="mt-4 text-foreground/80">
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <h1 className="font-display text-3xl text-primary sm:text-4xl">Minha conta</h1>
+      <p className="mt-4 break-words text-foreground/80">
         Você está conectado como <span className="text-foreground">{user.email}</span>.
       </p>
 
@@ -41,7 +41,7 @@ export default async function ContaPage() {
               <li key={order.id}>
                 <Link
                   href={`/pedido/${order.id}`}
-                  className="flex items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-accent"
+                  className="flex min-h-14 items-center justify-between gap-4 px-4 py-3 transition-colors hover:bg-accent"
                 >
                   <span>
                     <span className="font-medium">
@@ -70,7 +70,7 @@ export default async function ContaPage() {
       <form action="/auth/signout" method="post" className="mt-10">
         <button
           type="submit"
-          className="rounded-md border px-4 py-2 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="min-h-11 rounded-md border px-4 py-2 text-sm text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
         >
           Sair da conta
         </button>

@@ -29,10 +29,12 @@ export function CategoryCard({
           />
         </div>
       ) : null}
-      <div className="flex flex-col gap-2 p-6">
+      <div className="flex flex-col gap-2 p-5 sm:p-6">
         <h3 className="font-display text-xl text-primary">{name}</h3>
-        {description ? <p className="text-sm text-foreground/75">{description}</p> : null}
-        <span className="mt-2 text-sm text-primary group-hover:underline">{cta} →</span>
+        {description ? (
+          <p className="text-base leading-relaxed text-foreground/80">{description}</p>
+        ) : null}
+        <span className="mt-2 text-base text-primary group-hover:underline">{cta} →</span>
       </div>
     </Link>
   );

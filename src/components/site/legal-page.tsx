@@ -15,8 +15,8 @@ export function LegalPage({
   children: ReactNode;
 }) {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-      <h1 className="font-display text-4xl text-primary">{title}</h1>
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <h1 className="font-display text-3xl text-primary sm:text-4xl">{title}</h1>
       {updatedAt ? (
         <p className="mt-2 text-sm text-muted-foreground">Última atualização: {updatedAt}</p>
       ) : null}

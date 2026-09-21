@@ -56,8 +56,8 @@ export default async function OrderPage({ params, searchParams }: Params) {
   const reachedStatuses = new Set((events ?? []).map((e) => e.status));
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
-      <div className="rounded-xl border bg-card p-6 text-center">
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <div className="rounded-xl border bg-card p-5 text-center sm:p-6">
         <p className="text-sm uppercase tracking-wider text-muted-foreground">
           Pedido nº {shortId}
         </p>
@@ -185,11 +185,11 @@ export default async function OrderPage({ params, searchParams }: Params) {
         </address>
       </section>
 
-      <div className="mt-10 flex gap-4">
-        <Link href="/produtos" className="text-sm text-muted-foreground hover:text-primary">
+      <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2">
+        <Link href="/produtos" className="py-2 text-base text-muted-foreground hover:text-primary">
           ← Continuar comprando
         </Link>
-        <Link href="/conta" className="text-sm text-muted-foreground hover:text-primary">
+        <Link href="/conta" className="py-2 text-base text-muted-foreground hover:text-primary">
           Minha conta
         </Link>
       </div>

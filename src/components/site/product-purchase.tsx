@@ -67,7 +67,7 @@ export function ProductPurchase({
 
       {hasOptions ? (
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm text-muted-foreground">Escolha a opção:</legend>
+          <legend className="mb-1 text-base text-muted-foreground">Escolha a opção:</legend>
           <div className="flex flex-wrap gap-2">
             {variants.map((variant, i) => {
               const active = i === index;
@@ -82,7 +82,7 @@ export function ProductPurchase({
                   onClick={() => setIndex(i)}
                   aria-pressed={active}
                   className={cn(
-                    "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                    "flex min-h-11 w-full flex-col items-start gap-0.5 rounded-lg border sm:w-auto px-3 py-2 text-left text-base transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
                     active
                       ? "border-primary bg-primary text-primary-foreground"
                       : "bg-card hover:border-primary",
@@ -102,7 +102,7 @@ export function ProductPurchase({
         </fieldset>
       ) : null}
 
-      <dl className="flex flex-col gap-2 border-t pt-4 text-sm">
+      <dl className="flex flex-col gap-2 border-t pt-4 text-base">
         {dims ? (
           <div className="flex gap-2">
             <dt className="text-muted-foreground">Dimensões:</dt>
@@ -119,14 +119,14 @@ export function ProductPurchase({
 
       {/* Quantidade */}
       <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">Quantidade</span>
+        <span className="text-base text-muted-foreground">Quantidade</span>
         <div className="flex items-center rounded-lg border">
           <button
             type="button"
             onClick={() => setQuantity((q) => Math.max(1, q - 1))}
             disabled={quantity <= 1}
             aria-label="Diminuir quantidade"
-            className="flex size-9 items-center justify-center rounded-l-lg text-primary transition-colors hover:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="flex size-11 items-center justify-center rounded-l-lg text-primary transition-colors hover:bg-secondary disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <Minus className="size-4" />
           </button>
@@ -137,14 +137,14 @@ export function ProductPurchase({
             type="button"
             onClick={() => setQuantity((q) => q + 1)}
             aria-label="Aumentar quantidade"
-            className="flex size-9 items-center justify-center rounded-r-lg text-primary transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="flex size-11 items-center justify-center rounded-r-lg text-primary transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <Plus className="size-4" />
           </button>
         </div>
       </div>
 
-      <Button type="button" size="lg" onClick={handleAddToCart}>
+      <Button type="button" size="lg" className="text-base" onClick={handleAddToCart}>
         {added ? "Adicionado ✓" : "Adicionar ao Carrinho"}
       </Button>
     </div>

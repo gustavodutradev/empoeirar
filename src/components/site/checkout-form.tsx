@@ -251,6 +251,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
                 onChange={(e) => set("cep", e.target.value)}
                 onBlur={lookupCep}
                 inputMode="numeric"
+                autoComplete="postal-code"
                 placeholder="00000-000"
                 aria-invalid={errors.cep ? true : undefined}
               />
@@ -265,7 +266,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
             </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-[1fr_2fr]">
+          <div className="grid grid-cols-[1fr_2fr] gap-4">
             <Field label="Número" error={errors.number}>
               <Input
                 value={form.number}
@@ -287,11 +288,12 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
             <Input
               value={form.district}
               onChange={(e) => set("district", e.target.value)}
+              autoComplete="address-level3"
               aria-invalid={errors.district ? true : undefined}
             />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+          <div className="grid grid-cols-[2fr_1fr] gap-4">
             <Field label="Cidade" error={errors.city}>
               <Input
                 value={form.city}
@@ -305,6 +307,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
                 value={form.state}
                 onChange={(e) => set("state", e.target.value.toUpperCase())}
                 maxLength={2}
+                autoComplete="address-level1"
                 placeholder="MG"
                 aria-invalid={errors.state ? true : undefined}
               />
@@ -314,7 +317,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
       </div>
 
       {/* Resumo */}
-      <aside className="w-full shrink-0 rounded-xl border bg-card p-6 lg:w-80">
+      <aside className="w-full shrink-0 rounded-xl border bg-card p-5 sm:p-6 lg:sticky lg:top-24 lg:w-80">
         <h2 className="font-display text-xl text-primary">Resumo</h2>
         <ul className="mt-4 flex flex-col gap-2 text-sm">
           {items.map((item) => (
@@ -338,7 +341,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
               {freight.map((option) => (
                 <label
                   key={option.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg border p-2 text-sm transition-colors has-[:checked]:border-primary has-[:checked]:bg-secondary"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border p-3 text-base transition-colors has-[:checked]:border-primary has-[:checked]:bg-secondary"
                 >
                   <input
                     type="radio"
@@ -346,7 +349,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
                     value={option.id}
                     checked={freightId === option.id}
                     onChange={() => setFreightId(option.id)}
-                    className="accent-primary"
+                    className="size-4 shrink-0 accent-primary"
                   />
                   <span className="flex-1">
                     {[option.company, option.name].filter(Boolean).join(" ")}
@@ -355,7 +358,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
                         {option.tag}
                       </span>
                     ) : null}
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="block text-sm text-muted-foreground">
                       até {option.deliveryDays} dia(s) úteis
                     </span>
                   </span>
@@ -391,7 +394,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
           </p>
         ) : null}
 
-        <Button type="submit" size="lg" className="mt-6 w-full" disabled={submitting}>
+        <Button type="submit" size="lg" className="mt-6 w-full text-base" disabled={submitting}>
           {submitting ? "Criando pedido…" : "Criar pedido"}
         </Button>
         <p className="mt-2 text-center text-xs text-muted-foreground">
@@ -415,10 +418,10 @@ function Field({
     // O input real vem via {children} dentro do <label> (associacao implicita e
     // valida); o Biome so nao enxerga isso atraves da prop children.
     // biome-ignore lint/a11y/noLabelWithoutControl: input renderizado como children
-    <label className="flex flex-col gap-1.5 text-sm">
+    <label className="flex min-w-0 flex-col gap-1.5 text-sm">
       <span className="font-medium">{label}</span>
       {children}
-      {error ? <span className="text-xs text-destructive">{error}</span> : null}
+      {error ? <span className="text-sm text-destructive">{error}</span> : null}
     </label>
   );
 }

@@ -5,7 +5,7 @@
  */
 export function PagePlaceholder({ title, description }: { title: string; description?: string }) {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
+    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-16 sm:px-6 sm:py-24 text-center">
       <h1 className="text-4xl">{title}</h1>
       <p className="max-w-md text-muted-foreground">
         {description ?? "Esta página está em construção e será publicada em breve."}

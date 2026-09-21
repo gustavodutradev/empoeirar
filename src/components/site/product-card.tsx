@@ -20,9 +20,11 @@ export function ProductCard({
       className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <ProductImage name={product.name} src={cover} className="aspect-square w-full" />
-      <div className="flex flex-col gap-1 p-4">
-        <h3 className="font-display text-lg text-primary group-hover:underline">{product.name}</h3>
-        <span className="text-sm text-muted-foreground">
+      <div className="flex flex-col gap-1 p-3 sm:p-4">
+        <h3 className="font-display text-base leading-snug text-primary group-hover:underline sm:text-lg">
+          {product.name}
+        </h3>
+        <span className="text-base text-muted-foreground">
           {product.hasOptions ? "a partir de " : ""}
           {formatBRL(product.priceFromCents)}
         </span>

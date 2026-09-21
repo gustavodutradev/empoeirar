@@ -1,12 +1,14 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ProductImage } from "@/components/site/product-image";
 import { cn } from "@/lib/utils";
 
 export function ProductCarousel({ name, images }: { name: string; images: string[] }) {
   const [index, setIndex] = useState(0);
+  // Posicao X do inicio do toque, para detectar swipe horizontal no mobile.
+  const touchStartX = useRef<number | null>(null);
 
   if (images.length === 0) {
     return <ProductImage name={name} className="aspect-square w-full rounded-xl border" />;
@@ -16,7 +18,21 @@ export function ProductCarousel({ name, images }: { name: string; images: string
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative">
+      <div
+        className="relative touch-pan-y"
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(e) => {
+          const start = touchStartX.current;
+          touchStartX.current = null;
+          const end = e.changedTouches[0]?.clientX;
+          if (start === null || end === undefined || images.length < 2) return;
+          const dx = end - start;
+          // Limiar de 40px: evita trocar de foto num toque/rolagem acidental.
+          if (Math.abs(dx) > 40) go(dx < 0 ? index + 1 : index - 1);
+        }}
+      >
         <ProductImage
           name={name}
           src={images[index]}
@@ -29,7 +45,7 @@ export function ProductCarousel({ name, images }: { name: string; images: string
               type="button"
               onClick={() => go(index - 1)}
               aria-label="Imagem anterior"
-              className="-translate-y-1/2 absolute top-1/2 left-2 flex size-9 items-center justify-center rounded-full border bg-card/90 text-primary shadow-sm transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="-translate-y-1/2 absolute top-1/2 left-2 flex size-10 items-center justify-center rounded-full border bg-card/90 text-primary shadow-sm transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <ChevronLeft className="size-5" />
             </button>
@@ -37,7 +53,7 @@ export function ProductCarousel({ name, images }: { name: string; images: string
               type="button"
               onClick={() => go(index + 1)}
               aria-label="Próxima imagem"
-              className="-translate-y-1/2 absolute top-1/2 right-2 flex size-9 items-center justify-center rounded-full border bg-card/90 text-primary shadow-sm transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="-translate-y-1/2 absolute top-1/2 right-2 flex size-10 items-center justify-center rounded-full border bg-card/90 text-primary shadow-sm transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <ChevronRight className="size-5" />
             </button>

@@ -5,7 +5,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
 
   return (
-    <div className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
+    <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
       <div className="mb-6 flex items-center gap-6 border-b pb-4">
         <span className="font-display text-xl text-primary">Admin</span>
         <nav className="flex gap-4 text-sm">

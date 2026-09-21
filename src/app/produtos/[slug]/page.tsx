@@ -25,12 +25,15 @@ export default async function ProductPage({ params }: Params) {
   const images = product.images;
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-      <Link href="/produtos" className="text-sm text-muted-foreground hover:text-primary">
+    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-6 sm:py-12">
+      <Link
+        href="/produtos"
+        className="inline-flex min-h-10 items-center text-base text-muted-foreground hover:text-primary"
+      >
         ← Voltar aos produtos
       </Link>
 
-      <div className="mt-6 grid gap-10 md:grid-cols-2">
+      <div className="mt-2 grid gap-6 sm:mt-6 md:grid-cols-2 md:gap-10">
         <ProductCarousel name={product.name} images={images} />
 
         <div className="flex flex-col gap-4">
@@ -40,10 +43,12 @@ export default async function ProductPage({ params }: Params) {
             </p>
           ) : null}
 
-          <h1 className="font-display text-4xl text-primary">{product.name}</h1>
+          <h1 className="font-display text-3xl leading-tight text-primary sm:text-4xl">
+            {product.name}
+          </h1>
 
           {product.description ? (
-            <p className="leading-relaxed text-foreground/80">{product.description}</p>
+            <p className="text-lg leading-relaxed text-foreground/85">{product.description}</p>
           ) : null}
 
           <ProductPurchase
@@ -54,9 +59,9 @@ export default async function ProductPage({ params }: Params) {
           />
 
           {product.material_care ? (
-            <div className="border-t pt-4 text-sm">
+            <div className="border-t pt-4 text-base">
               <p className="text-muted-foreground">Material e cuidados:</p>
-              <p className="mt-1 text-foreground/80">{product.material_care}</p>
+              <p className="mt-1 leading-relaxed text-foreground/85">{product.material_care}</p>
             </div>
           ) : null}
         </div>

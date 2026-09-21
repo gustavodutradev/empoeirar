@@ -25,13 +25,13 @@ export default async function CheckoutPage() {
     .maybeSingle();
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
-      <h1 className="font-display text-4xl text-primary">Finalizar compra</h1>
+    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+      <h1 className="font-display text-3xl text-primary sm:text-4xl">Finalizar compra</h1>
       <p className="mt-2 text-muted-foreground">
         Confirme seus dados e o endereço de entrega para criar o pedido.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6 sm:mt-8">
         <CheckoutForm
           prefill={{
             full_name: profile?.full_name ?? "",

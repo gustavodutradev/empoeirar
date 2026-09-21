@@ -81,8 +81,8 @@ const faqs: { q: string; a: ReactNode }[] = [
 
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
-      <h1 className="font-display text-4xl text-primary sm:text-5xl">Perguntas frequentes</h1>
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6 sm:py-16">
+      <h1 className="font-display text-3xl text-primary sm:text-5xl">Perguntas frequentes</h1>
 
       <div className="mt-8 flex flex-col gap-3">
         {faqs.map((item) => (

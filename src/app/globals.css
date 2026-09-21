@@ -129,3 +129,74 @@
     letter-spacing: -0.01em;
   }
 }
+
+/* =============================================================================
+   Mobile / toque
+   ========================================================================== */
+@layer base {
+  html {
+    /* iOS nao "infla" o texto sozinho ao girar para paisagem. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Ancoras (#) nao ficam escondidas atras do header sticky. */
+    scroll-padding-top: 5rem;
+  }
+  /* Sem o flash cinza do WebKit ao tocar; o feedback visual e o nosso :active. */
+  a,
+  button,
+  label {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Trava o scroll da pagina enquanto um <dialog> modal (menu) esta aberto. */
+  html:has(dialog[open]:modal) {
+    overflow: hidden;
+  }
+}
+
+/* Menu lateral (<dialog class="drawer">): desliza da direita. Usa @starting-style
+   e transicao de `display`/`overlay` (allow-discrete) para animar abrir E fechar
+   um <dialog> sem JS. Navegador sem suporte so abre/fecha sem animacao. */
+dialog.drawer {
+  translate: 100% 0;
+  transition:
+    translate 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    display 0.28s allow-discrete,
+    overlay 0.28s allow-discrete;
+}
+dialog.drawer[open] {
+  translate: 0 0;
+}
+@starting-style {
+  dialog.drawer[open] {
+    translate: 100% 0;
+  }
+}
+dialog.drawer::backdrop {
+  background-color: rgb(17 17 17 / 0);
+  transition:
+    background-color 0.28s ease,
+    display 0.28s allow-discrete,
+    overlay 0.28s allow-discrete;
+}
+dialog.drawer[open]::backdrop {
+  background-color: rgb(17 17 17 / 0.45);
+}
+@starting-style {
+  dialog.drawer[open]::backdrop {
+    background-color: rgb(17 17 17 / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  dialog.drawer,
+  dialog.drawer::backdrop {
+    transition: none;
+  }
+}
+
+/* Linha rolavel horizontal sem barra visivel (filtros de categoria no mobile). */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
