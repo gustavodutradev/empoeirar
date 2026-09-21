@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 
 export function ProductCarousel({ name, images }: { name: string; images: string[] }) {
   const [index, setIndex] = useState(0);
-  // Posicao X do inicio do toque, para detectar swipe horizontal no mobile.
   const touchStartX = useRef<number | null>(null);
 
   if (images.length === 0) {

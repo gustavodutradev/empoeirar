@@ -17,7 +17,6 @@ export default async function Home() {
 
   return (
     <main className="flex flex-1 flex-col">
-      {/* Hero */}
       <section className="flex flex-col items-center gap-6 px-4 py-12 text-center sm:px-6 sm:py-20">
         <h1 className="sr-only">Empoeirar</h1>
         {/* biome-ignore lint/performance/noImgElement: logo local em public/, sem otimização remota */}
@@ -36,7 +35,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Comprar por categoria */}
       <section className="bg-secondary/40 px-4 py-12 sm:px-6 sm:py-16">
         <div className="mx-auto max-w-6xl">
           <p className="text-sm uppercase tracking-wider text-muted-foreground">Compre por</p>
@@ -64,7 +62,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Destaques */}
       {highlights.length > 0 ? (
         <section className="px-4 py-12 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-6xl">

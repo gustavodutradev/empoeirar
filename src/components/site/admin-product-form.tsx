@@ -170,7 +170,6 @@ export function AdminProductForm({
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Campos do produto */}
       <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
         <h2 className="font-display text-lg text-primary">Dados do produto</h2>
 
@@ -245,7 +244,6 @@ export function AdminProductForm({
         </label>
       </section>
 
-      {/* Variantes */}
       <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg text-primary">Variantes</h2>

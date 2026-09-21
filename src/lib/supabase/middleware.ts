@@ -62,9 +62,5 @@ export async function updateSession(request: NextRequest, injectedHeaders: Heade
   // NUNCA deve ser a base de uma decisao de autorizacao no servidor.
   await supabase.auth.getUser();
 
-  // (Fase 1/2) Aqui entrara a protecao de rotas: se nao houver usuario e a
-  // rota for protegida (checkout/admin), redirecionar para /login. Deixado
-  // para quando essas rotas existirem, pra nao redirecionar no vazio.
-
   return supabaseResponse;
 }

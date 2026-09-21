@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-// Sempre dinamico: reflete o estado atual, nunca cacheado.
 export const dynamic = "force-dynamic";
 
 /**

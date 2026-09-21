@@ -121,7 +121,6 @@ export function CartView() {
 
   return (
     <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-      {/* Itens */}
       <ul className="flex flex-1 flex-col divide-y">
         {items.map((item) => {
           const detail = details[item.variantId];
@@ -210,7 +209,6 @@ export function CartView() {
         })}
       </ul>
 
-      {/* Resumo */}
       <aside className="w-full shrink-0 rounded-xl border bg-card p-5 sm:p-6 lg:sticky lg:top-24 lg:w-80">
         <h2 className="font-display text-xl text-primary">Resumo</h2>
         <div className="mt-4 flex justify-between text-base">

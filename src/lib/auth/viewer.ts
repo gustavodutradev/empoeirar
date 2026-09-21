@@ -3,12 +3,8 @@ import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Quem esta vendo a pagina (usuario + se e admin), memoizado POR REQUISICAO via
- * React `cache`. O header renderiza o estado de login duas vezes (desktop e menu
- * mobile); sem o cache seriam 2x getUser + 2x is_admin por request.
- *
- * `isAdmin` aqui serve SO para decidir se mostra o link "Admin" na UI. A
- * autorizacao de verdade continua no servidor (lib/admin/guard.ts + RLS/RPC).
+ * Usuario atual e se e admin, memoizado por requisicao (o header chama duas
+ * vezes). `isAdmin` so controla a UI; a autorizacao fica em guard.ts e na RLS.
  */
 export const getViewer = cache(async () => {
   const supabase = await createClient();

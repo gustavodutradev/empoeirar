@@ -3,13 +3,8 @@ import { cookies } from "next/headers";
 import { env } from "@/env";
 
 /**
- * Cliente Supabase para uso NO SERVIDOR (Server Components, Route Handlers,
- * Server Actions).
- *
- * Usa a chave anon + os cookies de sessao do usuario. Consequencia central:
- * toda query feita por este cliente carrega a identidade do usuario, entao a
- * RLS do Postgres e aplicada automaticamente — o banco te protege de IDOR/BOLA
- * na origem. Este e o cliente padrao pra 99% do codigo de servidor.
+ * Cliente padrao do servidor: chave anon + cookies de sessao, entao toda query
+ * roda com a identidade do usuario e sob RLS.
  */
 export async function createClient() {
   const cookieStore = await cookies();

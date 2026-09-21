@@ -93,10 +93,6 @@ export async function createPreference(
   return { id: data.id, initPoint: data.init_point };
 }
 
-/**
- * Le um pagamento pelo id (o webhook so manda o id; a fonte da verdade e a API).
- * Nunca confiamos no status que "chega" — buscamos direto no MP.
- */
 export type MpPayment = {
   id: string;
   status: string;

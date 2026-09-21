@@ -79,7 +79,6 @@ export default async function OrderPage({ params, searchParams }: Params) {
         ) : null}
       </div>
 
-      {/* Linha do tempo */}
       <section className="mt-8">
         <h2 className="font-display text-xl text-primary">Acompanhamento</h2>
         <ol className="mt-4 flex flex-col gap-0">
@@ -124,7 +123,6 @@ export default async function OrderPage({ params, searchParams }: Params) {
         </ol>
       </section>
 
-      {/* Itens */}
       <section className="mt-8">
         <h2 className="font-display text-xl text-primary">Itens</h2>
         <ul className="mt-4 flex flex-col divide-y">
@@ -170,7 +168,6 @@ export default async function OrderPage({ params, searchParams }: Params) {
         </div>
       </section>
 
-      {/* Entrega */}
       <section className="mt-8 text-sm">
         <h2 className="font-display text-xl text-primary">Entrega</h2>
         <address className="mt-3 not-italic text-foreground/80">

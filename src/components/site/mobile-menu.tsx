@@ -13,13 +13,8 @@ const secondaryLinks = [
 ];
 
 /**
- * Menu lateral do mobile, construido sobre o <dialog> nativo com showModal().
- * O navegador entrega de graca o que seria trabalhoso fazer a mao: foco preso
- * dentro do menu, Esc para fechar, fundo inerte (nao clicavel/nao lido pelo
- * leitor de tela) e o dialog na "top layer" (sem briga de z-index).
- *
- * `children` recebe o <AuthNav variant="mobile" /> (Server Component) — e o
- * padrao de passar server components como filhos de um client component.
+ * Menu lateral do mobile sobre <dialog> com showModal(): foco preso, Esc e
+ * fundo inerte vem do navegador. `children` recebe o <AuthNav> (server).
  */
 export function MobileMenu({ children }: { children: React.ReactNode }) {
   const dialogRef = useRef<HTMLDialogElement>(null);

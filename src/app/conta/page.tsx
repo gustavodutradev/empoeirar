@@ -13,9 +13,7 @@ export default async function ContaPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Guarda de rota NO SERVIDOR. Nunca confie em esconder o link no header: a
-  // pagina em si precisa barrar acesso anonimo. Guardamos o caminho em `next`
-  // pra voltar aqui depois do login.
+  // `next` traz o usuario de volta para ca depois do login.
   if (!user) {
     redirect("/entrar?next=/conta");
   }

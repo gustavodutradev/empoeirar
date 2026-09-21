@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
  * Imagem de produto. Se `src` for informado, renderiza a foto; caso contrario,
  * um placeholder na identidade do catalogo (moldura circular com anel bege).
  *
- * Ponte de teste: as fotos vem de public/produtos. Em producao, migram para o
- * Supabase Storage e o componente troca <img> por next/image sem afetar o resto.
+ * `src` vem do Storage (product_image) ou, para produto sem foto no banco, do
+ * fallback em public/produtos.
  */
 export function ProductImage({
   name,
@@ -18,7 +18,7 @@ export function ProductImage({
 }) {
   if (src) {
     return (
-      // biome-ignore lint/performance/noImgElement: ponte de teste com imagens locais; migra para next/image com o Storage.
+      // biome-ignore lint/performance/noImgElement: fotos do Storage/public servidas direto; migrar para next/image depois.
       <img src={src} alt={name} loading="lazy" className={cn("object-cover", className)} />
     );
   }

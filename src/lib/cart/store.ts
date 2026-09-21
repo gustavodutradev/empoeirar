@@ -27,10 +27,7 @@ const clientStorage: StateStorage = {
 /**
  * Carrinho no cliente, persistido no localStorage (chave "empoeirar-cart").
  * Cada linha e uma VARIANTE (o SKU): mesma variante soma quantidade.
- *
- * Provisorio: quando tivermos login, o carrinho anonimo "sobe" para o banco
- * (por usuario, sob RLS). A forma do item ja carrega o que o checkout/frete
- * vao precisar (variantId + quantidade).
+ * Logado, o CartSync espelha o carrinho no banco.
  */
 export type CartItem = {
   variantId: string;
@@ -91,7 +88,6 @@ export const useCart = create<CartState>()(
   ),
 );
 
-// Seletores derivados.
 export const selectCount = (s: CartState) => s.items.reduce((n, i) => n + i.quantity, 0);
 export const selectTotalCents = (s: CartState) =>
   s.items.reduce((sum, i) => sum + i.priceCents * i.quantity, 0);

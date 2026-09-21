@@ -200,7 +200,6 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
       noValidate
     >
       <div className="flex flex-1 flex-col gap-8">
-        {/* Dados pessoais */}
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-xl text-primary">Seus dados</h2>
 
@@ -240,7 +239,6 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
           </Field>
         </section>
 
-        {/* Endereço de entrega */}
         <section className="flex flex-col gap-4">
           <h2 className="font-display text-xl text-primary">Endereço de entrega</h2>
 
@@ -316,7 +314,6 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
         </section>
       </div>
 
-      {/* Resumo */}
       <aside className="w-full shrink-0 rounded-xl border bg-card p-5 sm:p-6 lg:sticky lg:top-24 lg:w-80">
         <h2 className="font-display text-xl text-primary">Resumo</h2>
         <ul className="mt-4 flex flex-col gap-2 text-sm">
@@ -331,7 +328,6 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
           ))}
         </ul>
 
-        {/* Frete */}
         <div className="mt-4 border-t pt-4">
           <p className="text-sm font-medium">Frete</p>
           {freightLoading ? (

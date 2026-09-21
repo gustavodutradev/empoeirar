@@ -9,9 +9,8 @@ import type { ProductVariant } from "@/lib/queries/catalog";
 import { cn } from "@/lib/utils";
 
 /**
- * Bloco de compra: preco + seletor de variante (tamanho/quantidade) + contador
- * de quantidade + CTA. A variante escolhida e a quantidade sao o que, na Fase 2,
- * alimentam o carrinho e o calculo de frete (peso/dimensoes vem da variante).
+ * Bloco de compra: preco, seletor de variante, quantidade e botao de adicionar
+ * ao carrinho.
  */
 export function ProductPurchase({
   variants,
@@ -117,7 +116,6 @@ export function ProductPurchase({
         ) : null}
       </dl>
 
-      {/* Quantidade */}
       <div className="flex items-center gap-3">
         <span className="text-base text-muted-foreground">Quantidade</span>
         <div className="flex items-center rounded-lg border">

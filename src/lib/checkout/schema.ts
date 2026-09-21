@@ -2,13 +2,8 @@ import { z } from "zod";
 import { isValidCpf, onlyDigits } from "@/lib/validation/cpf";
 
 /**
- * Schemas do checkout. Mesma fonte de verdade para o formulario (UX no cliente)
- * E para a server action (validacao real no servidor). Regra do projeto: validar
- * SEMPRE no servidor; o cliente e so conveniencia. Por isso a action reusa
- * exatamente estes schemas antes de tocar o banco.
- *
- * Campos numericos (cpf/telefone/cep) sao normalizados para so-digitos aqui, na
- * borda — o resto do sistema nunca ve mascara.
+ * Schemas do checkout, usados no formulario e revalidados na server action.
+ * CPF, telefone e CEP saem daqui so com digitos.
  */
 
 export const customerSchema = z.object({

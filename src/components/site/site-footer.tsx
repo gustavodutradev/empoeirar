@@ -7,17 +7,13 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-auto bg-secondary text-secondary-foreground">
-      {/* Mobile: marca e atendimento ocupam a linha toda; as duas colunas de links
-          ficam lado a lado (rodape bem mais curto de rolar). */}
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-4">
-        {/* Marca */}
         <div className="col-span-2 flex flex-col gap-3 sm:col-span-1">
           {/* biome-ignore lint/performance/noImgElement: logo local em public/, sem otimização remota */}
           <img src="/logo-empoeirar.png" alt={siteConfig.name} className="h-16 w-auto self-start" />
           <p className="max-w-xs text-sm text-secondary-foreground/90">{siteConfig.tagline}</p>
         </div>
 
-        {/* Colunas de navegacao */}
         {footerNav.map((section) => (
           <nav key={section.title} aria-label={section.title}>
             <h2 className="mb-4 text-sm font-medium uppercase tracking-wider text-primary">
@@ -38,7 +34,6 @@ export function SiteFooter() {
           </nav>
         ))}
 
-        {/* Atendimento */}
         <div className="col-span-2 sm:col-span-1">
           <h2 className="mb-4 text-sm font-medium uppercase tracking-wider text-primary">
             Atendimento

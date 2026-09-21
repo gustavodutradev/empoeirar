@@ -1,6 +1,6 @@
 /**
  * Rótulos e ordem do ciclo de vida do pedido. Fonte única para a linha do tempo
- * (o rastreio que o cliente acompanha) e para o admin depois.
+ * (o rastreio que o cliente acompanha) e para o admin.
  */
 export const ORDER_STATUS = {
   pending_payment: { label: "Pedido recebido", description: "Aguardando pagamento." },

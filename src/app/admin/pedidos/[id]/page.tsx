@@ -50,12 +50,10 @@ export default async function AdminOrderDetail({ params }: Params) {
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
-        {/* Controle de status */}
         <div className="md:col-span-2">
           <AdminOrderStatus orderId={order.id} currentStatus={order.status} />
         </div>
 
-        {/* Cliente */}
         <section className="rounded-xl border bg-card p-4 text-sm">
           <h2 className="font-display text-lg text-primary">Cliente</h2>
           <dl className="mt-2 flex flex-col gap-1">
@@ -78,7 +76,6 @@ export default async function AdminOrderDetail({ params }: Params) {
           </dl>
         </section>
 
-        {/* Entrega */}
         <section className="rounded-xl border bg-card p-4 text-sm">
           <h2 className="font-display text-lg text-primary">Entrega</h2>
           <address className="mt-2 not-italic text-foreground/80">
@@ -91,7 +88,6 @@ export default async function AdminOrderDetail({ params }: Params) {
           </address>
         </section>
 
-        {/* Itens */}
         <section className="rounded-xl border bg-card p-4 md:col-span-2">
           <h2 className="font-display text-lg text-primary">Itens</h2>
           <ul className="mt-2 flex flex-col divide-y text-sm">
@@ -111,7 +107,6 @@ export default async function AdminOrderDetail({ params }: Params) {
           </div>
         </section>
 
-        {/* Linha do tempo */}
         <section className="rounded-xl border bg-card p-4 md:col-span-2">
           <h2 className="font-display text-lg text-primary">Histórico</h2>
           <ol className="mt-3 flex flex-col gap-3 text-sm">

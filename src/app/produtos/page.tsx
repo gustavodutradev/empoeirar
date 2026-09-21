@@ -46,8 +46,6 @@ export default async function ProdutosPage({
         Moldes e ferramentas feitos à mão em MDF. Filtre por categoria.
       </p>
 
-      {/* Mobile: uma linha rolavel na horizontal (nao empurra o grid pra baixo);
-          sm+: quebra em varias linhas. */}
       <nav
         aria-label="Filtrar por categoria"
         className="scrollbar-none -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"

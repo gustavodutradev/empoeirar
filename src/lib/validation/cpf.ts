@@ -6,7 +6,6 @@
  * NAO valida se o CPF "existe" na Receita — so a consistencia matematica.
  */
 
-/** Remove tudo que nao for digito. */
 export function onlyDigits(value: string): string {
   return value.replace(/\D/g, "");
 }

@@ -3,7 +3,7 @@
  * Header e Footer leem daqui para nao duplicar links.
  *
  * E-mail: usamos empoeirar@gmail.com enquanto o dominio nao tem caixa propria.
- * Trocar para contato@empoeirar.com quando o e-mail do dominio estiver ativo.
+ * Trocar para contato@empoeirar.com.br quando o e-mail do dominio estiver ativo.
  */
 export const siteConfig = {
   name: "Empoeirar",
