@@ -2,6 +2,7 @@
 
 import { createOrderInputSchema } from "@/lib/checkout/schema";
 import { sendOrderStatusEmail } from "@/lib/email/order-notification";
+import { reportError } from "@/lib/monitoring/report";
 import { allowRequest } from "@/lib/rate-limit";
 import { quoteFreight } from "@/lib/shipping/quote";
 import { createClient } from "@/lib/supabase/server";
@@ -84,7 +85,7 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
   });
 
   if (error || typeof data !== "string") {
-    console.error("[create_order] falhou:", error?.message ?? "retorno inesperado");
+    await reportError("create_order", error?.message ?? "retorno inesperado");
     return { ok: false, error: "Não foi possível criar o pedido. Tente novamente." };
   }
 

@@ -2,11 +2,21 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/env";
 import { sendOrderStatusEmail } from "@/lib/email/order-notification";
+import { notifyAdmin, reportError } from "@/lib/monitoring/report";
 import { getPayment, isMercadoPagoConfigured } from "@/lib/payments/mercadopago";
-import { decidePaymentTransition } from "@/lib/payments/payment-transition";
+import { decidePaymentTransition, type IgnoreReason } from "@/lib/payments/payment-transition";
 import { verifyWebhookSignature } from "@/lib/payments/webhook-verify";
 import { allowRequest, clientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+// Texto do e-mail de alerta para cada motivo que pede acao humana.
+const ALERT_REASON_TEXT: Partial<Record<IgnoreReason, string>> = {
+  duplicate_payment: "Cliente pagou duas vezes. Estornar um dos pagamentos no Mercado Pago.",
+  paid_after_cancel: "Pagamento aprovado em pedido cancelado. Reativar o pedido ou estornar.",
+  amount_mismatch: "Valor pago diferente do total do pedido. Pedido NAO foi confirmado.",
+  in_mediation: "Cliente abriu disputa no Mercado Pago. Responder pelo painel do MP.",
+  unknown_status: "Status de pagamento desconhecido. Conferir no painel do MP.",
+};
 
 // node:crypto (assinatura) exige runtime Node, nao Edge.
 export const runtime = "nodejs";
@@ -67,7 +77,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid signature" }, { status: 401 });
     }
   } else {
-    console.warn("[mp webhook] MERCADOPAGO_WEBHOOK_SECRET ausente — assinatura não verificada.");
+    // Sem o segredo, qualquer um que descubra a URL pode forjar notificacoes.
+    // Em producao isso e configuracao errada: alerta (1x por hora).
+    await notifyAdmin({
+      kind: "business",
+      title: "Webhook do Mercado Pago sem verificação de assinatura",
+      fingerprintKey: "webhook|missing_secret",
+      details: { acao: "Configurar MERCADOPAGO_WEBHOOK_SECRET na Vercel." },
+    });
   }
 
   try {
@@ -93,7 +110,9 @@ export async function POST(request: Request) {
     if (orderError) {
       // Erro de banco e transitorio: 500 faz o MP reenviar. Dar 200 aqui
       // perderia a notificacao e o pedido pago ficaria preso em "aguardando".
-      console.error("[mp webhook] leitura do pedido:", orderError.message);
+      await reportError("webhook: leitura do pedido", orderError.message, {
+        pagamento: payment.id,
+      });
       return NextResponse.json({ error: "db" }, { status: 500 });
     }
     if (!order) {
@@ -107,13 +126,23 @@ export async function POST(request: Request) {
 
     if (decision.action === "ignore") {
       if (decision.alert) {
-        // Casos que pedem acao humana (estorno, disputa...). Item 42: virar alerta.
-        // So ids e valores: nada de nome/e-mail do cliente no log.
-        console.error(
-          `[mp webhook] ATENCAO ${decision.reason}: pedido=${order.id} status=${order.status} ` +
-            `pagamento=${payment.id} mp_status=${payment.status} ` +
-            `total=${order.total_cents} pago=${payment.amountCents}`,
-        );
+        // Casos que pedem acao humana (estorno, disputa...). So ids e valores:
+        // nada de nome/e-mail do cliente no alerta.
+        await notifyAdmin({
+          kind: "business",
+          title: `Pagamento precisa de atenção (${decision.reason})`,
+          // Um alerta por pedido+pagamento+motivo: reenvio do MP nao repete e-mail.
+          fingerprintKey: `webhook|${decision.reason}|${order.id}|${payment.id}`,
+          details: {
+            motivo: ALERT_REASON_TEXT[decision.reason] ?? decision.reason,
+            pedido: order.id,
+            status_pedido: order.status,
+            pagamento_mp: payment.id,
+            status_mp: payment.status,
+            total_pedido_centavos: order.total_cents,
+            valor_pago_centavos: payment.amountCents,
+          },
+        });
       }
       return NextResponse.json({ ignored: decision.reason }, { status: 200 });
     }
@@ -129,7 +158,7 @@ export async function POST(request: Request) {
 
     if (error) {
       // Erro do banco: pede reenvio (500).
-      console.error("[mp webhook] advance_order_status:", error.message);
+      await reportError("webhook: advance_order_status", error.message, { pedido: order.id });
       return NextResponse.json({ error: "db" }, { status: 500 });
     }
 
@@ -141,7 +170,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {
-    console.error("[mp webhook] erro:", err instanceof Error ? err.message : err);
+    await reportError("webhook", err, { pagamento: dataId });
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@
 
 import { ORDER_STATUS, type OrderStatus } from "@/lib/checkout/status";
 import { sendOrderStatusEmail } from "@/lib/email/order-notification";
+import { reportError } from "@/lib/monitoring/report";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -42,7 +43,7 @@ export async function adminAdvanceOrder(orderId: string, status: string): Promis
   });
 
   if (error) {
-    console.error("[adminAdvanceOrder]", error.message);
+    await reportError("adminAdvanceOrder", error.message, { pedido: orderId, status });
     return { ok: false, error: "Não foi possível atualizar o status." };
   }
 

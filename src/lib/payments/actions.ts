@@ -1,6 +1,7 @@
 "use server";
 
 import { env } from "@/env";
+import { reportError } from "@/lib/monitoring/report";
 import { createPreference, isMercadoPagoConfigured } from "@/lib/payments/mercadopago";
 import { allowRequest } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
@@ -83,12 +84,12 @@ export async function startPayment(orderId: string): Promise<StartPaymentResult>
       p_preference_id: pref.id,
     });
     if (attachError) {
-      console.error("[startPayment] attach falhou:", attachError.message);
+      await reportError("startPayment: attach", attachError.message, { pedido: orderId });
     }
 
     return { ok: true, url: pref.initPoint };
   } catch (err) {
-    console.error("[startPayment] erro:", err instanceof Error ? err.message : err);
+    await reportError("startPayment", err, { pedido: orderId });
     return { ok: false, error: "Não foi possível iniciar o pagamento. Tente novamente." };
   }
 }

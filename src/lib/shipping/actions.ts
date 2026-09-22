@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { z } from "zod";
+import { reportError } from "@/lib/monitoring/report";
 import { allowRequest, clientIp } from "@/lib/rate-limit";
 import type { FreightOption } from "@/lib/shipping/melhor-envio";
 import { isMelhorEnvioConfigured } from "@/lib/shipping/melhor-envio";
@@ -50,7 +51,7 @@ export async function getFreightOptions(input: unknown): Promise<FreightResult> 
     }
     return { ok: true, options };
   } catch (err) {
-    console.error("[getFreightOptions]", err instanceof Error ? err.message : err);
+    await reportError("getFreightOptions", err);
     return { ok: false, error: "Não foi possível calcular o frete agora." };
   }
 }

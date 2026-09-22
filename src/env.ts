@@ -34,6 +34,9 @@ export const env = createEnv({
     // Opcionais: sem eles o envio e pulado e registrado no log.
     SMTP_USER: z.string().min(1).optional(),
     SMTP_PASS: z.string().min(1).optional(),
+    // Destino dos alertas de erro e de pagamento (item 42). Opcional: sem ele
+    // os alertas ficam so no log da Vercel.
+    ADMIN_ALERT_EMAIL: z.email().optional(),
 
     // --- Melhor Envio ---
     // Opcionais: sem o token o checkout mostra "frete a calcular".
