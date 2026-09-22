@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 import { PayButton } from "@/components/site/pay-button";
-import { ORDER_FLOW, ORDER_STATUS } from "@/lib/checkout/status";
+import { isOrderStatus, ORDER_PAGE_HEADLINE } from "@/lib/checkout/status";
+import { buildOrderTimeline } from "@/lib/checkout/timeline";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,6 +18,11 @@ type Params = {
 export default async function OrderPage({ params, searchParams }: Params) {
   const { id } = await params;
   const { pagamento } = await searchParams;
+
+  // id malformado nunca chega ao banco (evita erro de cast uuid no Postgres) nem
+  // é ecoado no ?next= do login.
+  if (!z.uuid().safeParse(id).success) notFound();
+
   const supabase = await createClient();
 
   const {
@@ -53,7 +60,12 @@ export default async function OrderPage({ params, searchParams }: Params) {
   ]);
 
   const shortId = order.id.slice(0, 8).toUpperCase();
-  const reachedStatuses = new Set((events ?? []).map((e) => e.status));
+  const timeline = buildOrderTimeline(order.status, events ?? []);
+  // Status desconhecido (enum novo no banco sem texto aqui) cai num título neutro.
+  const headline = isOrderStatus(order.status)
+    ? ORDER_PAGE_HEADLINE[order.status]
+    : { title: "Seu pedido", lead: "" };
+  const lead = headline.lead.replace("{email}", order.customer_email ?? "seu e-mail");
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
@@ -61,10 +73,8 @@ export default async function OrderPage({ params, searchParams }: Params) {
         <p className="text-sm uppercase tracking-wider text-muted-foreground">
           Pedido nº {shortId}
         </p>
-        <h1 className="mt-1 font-display text-3xl text-primary">Pedido criado!</h1>
-        <p className="mt-2 text-muted-foreground">
-          Enviamos a confirmação para {order.customer_email}.
-        </p>
+        <h1 className="mt-1 font-display text-3xl text-primary">{headline.title}</h1>
+        {lead ? <p className="mt-2 text-muted-foreground">{lead}</p> : null}
 
         {order.status === "pending_payment" ? (
           <div className="mt-6">
@@ -82,38 +92,44 @@ export default async function OrderPage({ params, searchParams }: Params) {
       <section className="mt-8">
         <h2 className="font-display text-xl text-primary">Acompanhamento</h2>
         <ol className="mt-4 flex flex-col gap-0">
-          {ORDER_FLOW.map((status, i) => {
-            const reached = reachedStatuses.has(status);
-            const event = (events ?? []).find((e) => e.status === status);
-            const isLast = i === ORDER_FLOW.length - 1;
+          {timeline.map((step, i) => {
+            const isLast = i === timeline.length - 1;
+            const cancelled = step.tone === "cancelled";
+            const dotClass = cancelled
+              ? "mt-1 size-3 rounded-full bg-destructive"
+              : step.reached
+                ? "mt-1 size-3 rounded-full bg-primary"
+                : "mt-1 size-3 rounded-full border border-muted-foreground/40 bg-background";
+            // A linha até a próxima etapa herda a cor de quem vem depois: o
+            // trecho que leva ao "Cancelado" fica vermelho, não verde.
+            const next = timeline[i + 1];
+            const lineClass =
+              next?.tone === "cancelled"
+                ? "w-px flex-1 bg-destructive/40"
+                : step.reached && next?.reached
+                  ? "w-px flex-1 bg-primary/40"
+                  : "w-px flex-1 bg-border";
+            const labelClass = cancelled
+              ? "font-medium text-destructive"
+              : step.reached
+                ? "font-medium text-foreground"
+                : "text-muted-foreground";
             return (
-              <li key={status} className="flex gap-3">
+              <li
+                key={step.status}
+                className="flex gap-3"
+                aria-current={step.status === order.status ? "step" : undefined}
+              >
                 <div className="flex flex-col items-center">
-                  <span
-                    className={
-                      reached
-                        ? "mt-1 size-3 rounded-full bg-primary"
-                        : "mt-1 size-3 rounded-full border border-muted-foreground/40 bg-background"
-                    }
-                    aria-hidden
-                  />
-                  {!isLast ? (
-                    <span
-                      className={reached ? "w-px flex-1 bg-primary/40" : "w-px flex-1 bg-border"}
-                      aria-hidden
-                    />
-                  ) : null}
+                  <span className={dotClass} aria-hidden />
+                  {!isLast ? <span className={lineClass} aria-hidden /> : null}
                 </div>
                 <div className={isLast ? "pb-0" : "pb-6"}>
-                  <p className={reached ? "font-medium text-foreground" : "text-muted-foreground"}>
-                    {ORDER_STATUS[status].label}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {event?.note ?? ORDER_STATUS[status].description}
-                  </p>
-                  {event ? (
+                  <p className={labelClass}>{step.label}</p>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                  {step.at ? (
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatDateTime(event.created_at)}
+                      {formatDateTime(step.at)}
                     </p>
                   ) : null}
                 </div>
