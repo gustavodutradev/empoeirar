@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { z } from "zod";
 import { PayButton } from "@/components/site/pay-button";
-import { ORDER_FLOW, ORDER_STATUS } from "@/lib/checkout/status";
+import {
+  isOrderStatus,
+  ORDER_FLOW,
+  ORDER_PAGE_HEADLINE,
+  ORDER_STATUS,
+} from "@/lib/checkout/status";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,6 +22,11 @@ type Params = {
 export default async function OrderPage({ params, searchParams }: Params) {
   const { id } = await params;
   const { pagamento } = await searchParams;
+
+  // id malformado nunca chega ao banco (evita erro de cast uuid no Postgres) nem
+  // é ecoado no ?next= do login.
+  if (!z.uuid().safeParse(id).success) notFound();
+
   const supabase = await createClient();
 
   const {
@@ -54,6 +65,11 @@ export default async function OrderPage({ params, searchParams }: Params) {
 
   const shortId = order.id.slice(0, 8).toUpperCase();
   const reachedStatuses = new Set((events ?? []).map((e) => e.status));
+  // Status desconhecido (enum novo no banco sem texto aqui) cai num título neutro.
+  const headline = isOrderStatus(order.status)
+    ? ORDER_PAGE_HEADLINE[order.status]
+    : { title: "Seu pedido", lead: "" };
+  const lead = headline.lead.replace("{email}", order.customer_email ?? "seu e-mail");
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
@@ -61,10 +77,8 @@ export default async function OrderPage({ params, searchParams }: Params) {
         <p className="text-sm uppercase tracking-wider text-muted-foreground">
           Pedido nº {shortId}
         </p>
-        <h1 className="mt-1 font-display text-3xl text-primary">Pedido criado!</h1>
-        <p className="mt-2 text-muted-foreground">
-          Enviamos a confirmação para {order.customer_email}.
-        </p>
+        <h1 className="mt-1 font-display text-3xl text-primary">{headline.title}</h1>
+        {lead ? <p className="mt-2 text-muted-foreground">{lead}</p> : null}
 
         {order.status === "pending_payment" ? (
           <div className="mt-6">
