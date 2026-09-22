@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "@/env";
-import { sendOrderStatusEmail } from "@/lib/email/order-notification";
+import { sendOrderStatusEmail, sendSellerNewOrderEmail } from "@/lib/email/order-notification";
 import { notifyAdmin, reportError } from "@/lib/monitoring/report";
 import { getPayment, isMercadoPagoConfigured } from "@/lib/payments/mercadopago";
 import { decidePaymentTransition, type IgnoreReason } from "@/lib/payments/payment-transition";
@@ -165,7 +165,11 @@ export async function POST(request: Request) {
     // Só notifica se HOUVE transição de verdade. O MP reenvia webhooks; sem
     // isto, um reenvio do mesmo pagamento mandaria e-mail duplicado ao cliente.
     if (changed === true) {
-      await sendOrderStatusEmail(order.id, decision.to);
+      await Promise.all([
+        sendOrderStatusEmail(order.id, decision.to),
+        // Venda confirmada: avisa o vendedor (item 12). Ambos nunca lançam.
+        decision.to === "paid" ? sendSellerNewOrderEmail(order.id) : Promise.resolve(),
+      ]);
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });

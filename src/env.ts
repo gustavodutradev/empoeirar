@@ -37,6 +37,9 @@ export const env = createEnv({
     // Destino dos alertas de erro e de pagamento (item 42). Opcional: sem ele
     // os alertas ficam so no log da Vercel.
     ADMIN_ALERT_EMAIL: z.email().optional(),
+    // Quem recebe o aviso de "nova venda" quando um pedido e pago (item 12).
+    // Opcional: sem ele o aviso e pulado (e registrado no log).
+    ORDER_NOTIFY_EMAIL: z.email().optional(),
 
     // --- Melhor Envio ---
     // Opcionais: sem o token o checkout mostra "frete a calcular".
