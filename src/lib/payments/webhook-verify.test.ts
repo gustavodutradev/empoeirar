@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapPaymentStatus, verifyWebhookSignature } from "./webhook-verify";
+import { verifyWebhookSignature } from "./webhook-verify";
 
 // Vetores fixos calculados fora do código (HMAC-SHA256 do manifesto no formato
 // documentado pelo Mercado Pago). Se alguém mudar o formato do manifesto, estes
@@ -68,26 +68,4 @@ describe("verifyWebhookSignature", () => {
     const { secret = SECRET, ...parts } = override as { secret?: string } & Partial<typeof valid>;
     expect(verifyWebhookSignature(secret, { ...valid, ...parts })).toBe(false);
   });
-});
-
-describe("mapPaymentStatus", () => {
-  it.each([
-    ["approved", "paid"],
-    ["rejected", "cancelled"],
-    ["cancelled", "cancelled"],
-    ["refunded", "cancelled"],
-    ["charged_back", "cancelled"],
-    ["pending", "pending_payment"],
-    ["in_process", "pending_payment"],
-    ["authorized", "pending_payment"],
-  ])("%s -> %s", (mp, expected) => {
-    expect(mapPaymentStatus(mp)).toBe(expected);
-  });
-
-  it.each(["in_mediation", "", "APPROVED", "desconhecido"])(
-    "status %j não muda o pedido (null)",
-    (mp) => {
-      expect(mapPaymentStatus(mp)).toBeNull();
-    },
-  );
 });

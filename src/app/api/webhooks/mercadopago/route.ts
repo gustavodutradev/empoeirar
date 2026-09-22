@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { env } from "@/env";
-import { ORDER_STATUS } from "@/lib/checkout/status";
 import { sendOrderStatusEmail } from "@/lib/email/order-notification";
 import { getPayment, isMercadoPagoConfigured } from "@/lib/payments/mercadopago";
-import { mapPaymentStatus, verifyWebhookSignature } from "@/lib/payments/webhook-verify";
+import { decidePaymentTransition } from "@/lib/payments/payment-transition";
+import { verifyWebhookSignature } from "@/lib/payments/webhook-verify";
 import { allowRequest, clientIp } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -16,7 +17,9 @@ export const runtime = "nodejs";
  *  1. Assinatura (x-signature) validada com o segredo do webhook — barra
  *     notificacao forjada.
  *  2. NUNCA confia no corpo: re-busca o pagamento na API do MP pelo id.
- *  3. Escreve via service_role chamando advance_order_status (idempotente).
+ *  3. Decide a transicao com decidePaymentTransition (regras de negocio,
+ *     funcao pura e testada) olhando o pedido E o pagamento.
+ *  4. Escreve via service_role chamando advance_order_status (idempotente).
  *
  * Sempre responde rapido. 200 = processado/ignorado (MP para de reenviar);
  * 401 = assinatura invalida; 500 = erro transitorio (MP reenvia depois).
@@ -76,36 +79,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ ignored: "payment_not_found" }, { status: 200 });
     }
 
-    const nextStatus = mapPaymentStatus(payment.status);
-    if (!nextStatus || !payment.externalReference) {
-      return NextResponse.json({ ignored: "no_transition" }, { status: 200 });
+    // external_reference e o id do pedido que NOS mandamos na preference. Se nao
+    // for UUID, nao e nosso: ack sem ir ao banco (senao vira erro de cast).
+    if (!z.uuid().safeParse(payment.externalReference).success) {
+      return NextResponse.json({ ignored: "no_reference" }, { status: 200 });
     }
 
-    // Cross-check ao CONFIRMAR pagamento: o valor pago tem que bater com o
-    // total do pedido. Impede que um pagamento de valor menor "confirme" um
-    // pedido caro (IDOR aplicado a pagamento).
-    if (nextStatus === "paid") {
-      const { data: order } = await admin
-        .from("customer_order")
-        .select("total_cents")
-        .eq("id", payment.externalReference)
-        .maybeSingle();
-      if (!order) {
-        return NextResponse.json({ ignored: "order_not_found" }, { status: 200 });
-      }
-      if (order.total_cents !== payment.amountCents) {
+    const { data: order, error: orderError } = await admin
+      .from("customer_order")
+      .select("id, status, total_cents, mp_payment_id")
+      .eq("id", payment.externalReference)
+      .maybeSingle();
+    if (orderError) {
+      // Erro de banco e transitorio: 500 faz o MP reenviar. Dar 200 aqui
+      // perderia a notificacao e o pedido pago ficaria preso em "aguardando".
+      console.error("[mp webhook] leitura do pedido:", orderError.message);
+      return NextResponse.json({ error: "db" }, { status: 500 });
+    }
+    if (!order) {
+      return NextResponse.json({ ignored: "order_not_found" }, { status: 200 });
+    }
+
+    const decision = decidePaymentTransition(
+      { status: order.status, mpPaymentId: order.mp_payment_id, totalCents: order.total_cents },
+      { id: payment.id, status: payment.status, amountCents: payment.amountCents },
+    );
+
+    if (decision.action === "ignore") {
+      if (decision.alert) {
+        // Casos que pedem acao humana (estorno, disputa...). Item 42: virar alerta.
+        // So ids e valores: nada de nome/e-mail do cliente no log.
         console.error(
-          `[mp webhook] valor divergente: pedido=${payment.externalReference} total=${order.total_cents} pago=${payment.amountCents}`,
+          `[mp webhook] ATENCAO ${decision.reason}: pedido=${order.id} status=${order.status} ` +
+            `pagamento=${payment.id} mp_status=${payment.status} ` +
+            `total=${order.total_cents} pago=${payment.amountCents}`,
         );
-        return NextResponse.json({ ignored: "amount_mismatch" }, { status: 200 });
       }
+      return NextResponse.json({ ignored: decision.reason }, { status: 200 });
     }
 
     const { data: changed, error } = await admin.rpc("advance_order_status", {
-      p_order_id: payment.externalReference,
-      p_status: nextStatus,
-      p_note: ORDER_STATUS[nextStatus].description,
-      p_mp_payment_id: payment.id,
+      p_order_id: order.id,
+      p_status: decision.to,
+      p_note: decision.note,
+      // So grava o id quando CONFIRMA o pagamento. Antes gravava em toda
+      // notificacao, e um pagamento recusado sobrescrevia o que pagou.
+      p_mp_payment_id: decision.paymentId,
     });
 
     if (error) {
@@ -117,7 +136,7 @@ export async function POST(request: Request) {
     // Só notifica se HOUVE transição de verdade. O MP reenvia webhooks; sem
     // isto, um reenvio do mesmo pagamento mandaria e-mail duplicado ao cliente.
     if (changed === true) {
-      await sendOrderStatusEmail(payment.externalReference, nextStatus);
+      await sendOrderStatusEmail(order.id, decision.to);
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });

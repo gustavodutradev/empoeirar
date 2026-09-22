@@ -1,7 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import type { OrderStatus } from "@/lib/checkout/status";
-
 /**
  * Funcoes PURAS do webhook (sem env, testaveis isoladamente).
  */
@@ -45,26 +43,4 @@ export function verifyWebhookSignature(
   const b = Buffer.from(v1, "hex");
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
-}
-
-/**
- * Traduz o status do pagamento no MP para o status do nosso pedido.
- * Retorna null quando o status nao deve mudar o pedido (ex.: in_mediation).
- */
-export function mapPaymentStatus(mpStatus: string): OrderStatus | null {
-  switch (mpStatus) {
-    case "approved":
-      return "paid";
-    case "rejected":
-    case "cancelled":
-    case "refunded":
-    case "charged_back":
-      return "cancelled";
-    case "pending":
-    case "in_process":
-    case "authorized":
-      return "pending_payment";
-    default:
-      return null;
-  }
 }
