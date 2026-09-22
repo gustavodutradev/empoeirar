@@ -24,3 +24,6 @@ pre-push:
     # Rede de seguranca antes de publicar: typecheck do projeto inteiro.
     typecheck:
       run: pnpm run typecheck
+    # Testes unitarios (Vitest): regras de pagamento, CSP, redirect, CPF...
+    test:
+      run: pnpm run test

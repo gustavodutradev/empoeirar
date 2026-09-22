@@ -6,12 +6,22 @@ export function formatBRL(cents: number): string {
   }).format(cents / 100);
 }
 
-/** Data/hora no padrao pt-BR: "20/08/2026 19:30". */
+/**
+ * Data/hora no padrao pt-BR, SEMPRE no horario de Brasilia: "20/08/2026 19:30".
+ *
+ * O fuso e explicito porque isto roda em Server Components, e o servidor da
+ * Vercel esta em UTC: sem `timeZone`, um pedido feito as 19:30 aparecia como
+ * 22:30. Brasilia nao tem mais horario de verao, mas o banco de fusos (IANA)
+ * cuida disso se voltar a existir.
+ */
+const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "America/Sao_Paulo",
+});
+
 export function formatDateTime(iso: string): string {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(iso));
+  return dateTimeFormatter.format(new Date(iso));
 }
 
 /** Formata milimetros como centimetros no padrao pt-BR: 265 -> "26,5". */
