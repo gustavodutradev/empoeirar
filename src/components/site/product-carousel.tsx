@@ -10,7 +10,9 @@ export function ProductCarousel({ name, images }: { name: string; images: string
   const touchStartX = useRef<number | null>(null);
 
   if (images.length === 0) {
-    return <ProductImage name={name} className="aspect-square w-full rounded-xl border" />;
+    return (
+      <ProductImage name={name} className="aspect-square w-full rounded-xl border" sizes="100vw" />
+    );
   }
 
   const go = (i: number) => setIndex((i + images.length) % images.length);
@@ -36,6 +38,10 @@ export function ProductCarousel({ name, images }: { name: string; images: string
           name={name}
           src={images[index]}
           className="aspect-square w-full rounded-xl border"
+          // metade de max-w-5xl no desktop; tela inteira no celular
+          sizes="(min-width: 1024px) 480px, (min-width: 768px) 50vw, 100vw"
+          // Foto principal da página do produto: é o LCP, carrega com prioridade.
+          priority={index === 0}
         />
 
         {images.length > 1 ? (
@@ -74,7 +80,13 @@ export function ProductCarousel({ name, images }: { name: string; images: string
                 i === index ? "ring-2 ring-primary" : "opacity-70 hover:opacity-100",
               )}
             >
-              <ProductImage name={name} src={img} className="aspect-square w-full" />
+              <ProductImage
+                name={name}
+                src={img}
+                className="aspect-square w-full"
+                // miniaturas: 5 por linha, abaixo da foto principal
+                sizes="(min-width: 1024px) 96px, (min-width: 768px) 10vw, 20vw"
+              />
             </button>
           ))}
         </div>

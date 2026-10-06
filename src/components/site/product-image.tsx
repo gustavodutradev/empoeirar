@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
@@ -6,20 +7,40 @@ import { cn } from "@/lib/utils";
  *
  * `src` vem do Storage (product_image) ou, para produto sem foto no banco, do
  * fallback em public/produtos.
+ *
+ * Usa next/image em modo `fill`: o tamanho vem do container (`className`, ex.:
+ * aspect-square w-full) e a Vercel gera versoes menores da foto sob demanda.
+ * `sizes` diz ao navegador que largura a imagem ocupa na tela; sem ele, o
+ * navegador assume a tela inteira e baixa a versao grande mesmo num card de
+ * 200px. Cada lugar que usa o componente informa o seu.
  */
 export function ProductImage({
   name,
   src,
   className,
+  sizes,
+  priority = false,
 }: {
   name: string;
   src?: string;
   className?: string;
+  sizes: string;
+  /** Foto principal acima da dobra (LCP): carrega já, com prioridade alta. */
+  priority?: boolean;
 }) {
   if (src) {
     return (
-      // biome-ignore lint/performance/noImgElement: fotos do Storage/public servidas direto; migrar para next/image depois.
-      <img src={src} alt={name} loading="lazy" className={cn("object-cover", className)} />
+      <div className={cn("relative overflow-hidden", className)}>
+        <Image
+          src={src}
+          alt={name}
+          fill
+          sizes={sizes}
+          className="object-cover"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "auto"}
+        />
+      </div>
     );
   }
 
