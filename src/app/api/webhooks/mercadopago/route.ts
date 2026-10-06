@@ -29,7 +29,8 @@ export const runtime = "nodejs";
  *  2. NUNCA confia no corpo: re-busca o pagamento na API do MP pelo id.
  *  3. Decide a transicao com decidePaymentTransition (regras de negocio,
  *     funcao pura e testada) olhando o pedido E o pagamento.
- *  4. Escreve via service_role chamando advance_order_status (idempotente).
+ *  4. Escreve via service_role chamando advance_order_status (idempotente e
+ *     com compare-and-set do status).
  *
  * Sempre responde rapido. 200 = processado/ignorado (MP para de reenviar);
  * 401 = assinatura invalida; 500 = erro transitorio (MP reenvia depois).
@@ -102,77 +103,98 @@ export async function POST(request: Request) {
       return NextResponse.json({ ignored: "no_reference" }, { status: 200 });
     }
 
-    const { data: order, error: orderError } = await admin
-      .from("customer_order")
-      .select("id, status, total_cents, mp_payment_id")
-      .eq("id", payment.externalReference)
-      .maybeSingle();
-    if (orderError) {
-      // Erro de banco e transitorio: 500 faz o MP reenviar. Dar 200 aqui
-      // perderia a notificacao e o pedido pago ficaria preso em "aguardando".
-      await reportError("webhook: leitura do pedido", orderError.message, {
-        pagamento: payment.id,
-      });
-      return NextResponse.json({ error: "db" }, { status: 500 });
-    }
-    if (!order) {
-      return NextResponse.json({ ignored: "order_not_found" }, { status: 200 });
-    }
+    const paymentSnapshot = {
+      id: payment.id,
+      status: payment.status,
+      amountCents: payment.amountCents,
+    };
 
-    const decision = decidePaymentTransition(
-      { status: order.status, mpPaymentId: order.mp_payment_id, totalCents: order.total_cents },
-      { id: payment.id, status: payment.status, amountCents: payment.amountCents },
-    );
-
-    if (decision.action === "ignore") {
-      if (decision.alert) {
-        // Casos que pedem acao humana (estorno, disputa...). So ids e valores:
-        // nada de nome/e-mail do cliente no alerta.
-        await notifyAdmin({
-          kind: "business",
-          title: `Pagamento precisa de atenção (${decision.reason})`,
-          // Um alerta por pedido+pagamento+motivo: reenvio do MP nao repete e-mail.
-          fingerprintKey: `webhook|${decision.reason}|${order.id}|${payment.id}`,
-          details: {
-            motivo: ALERT_REASON_TEXT[decision.reason] ?? decision.reason,
-            pedido: order.id,
-            status_pedido: order.status,
-            pagamento_mp: payment.id,
-            status_mp: payment.status,
-            total_pedido_centavos: order.total_cents,
-            valor_pago_centavos: payment.amountCents,
-          },
+    // Le -> decide -> grava com compare-and-set. Se outro webhook mudou o pedido
+    // entre a leitura e a gravacao, advance_order_status devolve false sem gravar
+    // e a gente rele e decide de novo (uma vez). Na segunda volta a decisao ja
+    // enxerga o estado novo (ex.: vira "duplicate_payment" e alerta).
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { data: order, error: orderError } = await admin
+        .from("customer_order")
+        .select("id, status, total_cents, mp_payment_id")
+        .eq("id", payment.externalReference)
+        .maybeSingle();
+      if (orderError) {
+        // Erro de banco e transitorio: 500 faz o MP reenviar. Dar 200 aqui
+        // perderia a notificacao e o pedido pago ficaria preso em "aguardando".
+        await reportError("webhook: leitura do pedido", orderError.message, {
+          pagamento: payment.id,
         });
+        return NextResponse.json({ error: "db" }, { status: 500 });
       }
-      return NextResponse.json({ ignored: decision.reason }, { status: 200 });
+      if (!order) {
+        return NextResponse.json({ ignored: "order_not_found" }, { status: 200 });
+      }
+
+      const decision = decidePaymentTransition(
+        { status: order.status, mpPaymentId: order.mp_payment_id, totalCents: order.total_cents },
+        paymentSnapshot,
+      );
+
+      if (decision.action === "ignore") {
+        if (decision.alert) {
+          // Casos que pedem acao humana (estorno, disputa...). So ids e valores:
+          // nada de nome/e-mail do cliente no alerta.
+          await notifyAdmin({
+            kind: "business",
+            title: `Pagamento precisa de atenção (${decision.reason})`,
+            // Um alerta por pedido+pagamento+motivo: reenvio do MP nao repete e-mail.
+            fingerprintKey: `webhook|${decision.reason}|${order.id}|${payment.id}`,
+            details: {
+              motivo: ALERT_REASON_TEXT[decision.reason] ?? decision.reason,
+              pedido: order.id,
+              status_pedido: order.status,
+              pagamento_mp: payment.id,
+              status_mp: payment.status,
+              total_pedido_centavos: order.total_cents,
+              valor_pago_centavos: payment.amountCents,
+            },
+          });
+        }
+        return NextResponse.json({ ignored: decision.reason }, { status: 200 });
+      }
+
+      const { data: changed, error } = await admin.rpc("advance_order_status", {
+        p_order_id: order.id,
+        p_status: decision.to,
+        p_note: decision.note,
+        // So grava o id quando CONFIRMA o pagamento, e na mesma escrita da
+        // transicao (ver migration 20260922200000).
+        p_mp_payment_id: decision.paymentId,
+        // So transiciona se o pedido ainda estiver como lemos acima.
+        p_expected_status: order.status,
+      });
+
+      if (error) {
+        // Erro do banco: pede reenvio (500).
+        await reportError("webhook: advance_order_status", error.message, { pedido: order.id });
+        return NextResponse.json({ error: "db" }, { status: 500 });
+      }
+
+      if (changed === true) {
+        // So notifica quando HOUVE transicao de verdade: reenvio do MP nao
+        // duplica e-mail. Os dois envios nunca lancam.
+        await Promise.all([
+          sendOrderStatusEmail(order.id, decision.to),
+          // Venda confirmada: avisa o vendedor (item 12).
+          decision.to === "paid" ? sendSellerNewOrderEmail(order.id) : Promise.resolve(),
+        ]);
+        return NextResponse.json({ ok: true }, { status: 200 });
+      }
+      // changed === false: o pedido mudou no meio do caminho. Rele e decide de novo.
     }
 
-    const { data: changed, error } = await admin.rpc("advance_order_status", {
-      p_order_id: order.id,
-      p_status: decision.to,
-      p_note: decision.note,
-      // So grava o id quando CONFIRMA o pagamento. Antes gravava em toda
-      // notificacao, e um pagamento recusado sobrescrevia o que pagou.
-      p_mp_payment_id: decision.paymentId,
+    // Duas corridas seguidas no mesmo pedido: nao deveria acontecer. Pede
+    // reenvio (o MP tenta de novo mais tarde) e registra.
+    await reportError("webhook: conflito de concorrencia", "pedido mudou duas vezes", {
+      pagamento: payment.id,
     });
-
-    if (error) {
-      // Erro do banco: pede reenvio (500).
-      await reportError("webhook: advance_order_status", error.message, { pedido: order.id });
-      return NextResponse.json({ error: "db" }, { status: 500 });
-    }
-
-    // Só notifica se HOUVE transição de verdade. O MP reenvia webhooks; sem
-    // isto, um reenvio do mesmo pagamento mandaria e-mail duplicado ao cliente.
-    if (changed === true) {
-      await Promise.all([
-        sendOrderStatusEmail(order.id, decision.to),
-        // Venda confirmada: avisa o vendedor (item 12). Ambos nunca lançam.
-        decision.to === "paid" ? sendSellerNewOrderEmail(order.id) : Promise.resolve(),
-      ]);
-    }
-
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json({ error: "conflict" }, { status: 500 });
   } catch (err) {
     await reportError("webhook", err, { pagamento: dataId });
     return NextResponse.json({ error: "internal" }, { status: 500 });
