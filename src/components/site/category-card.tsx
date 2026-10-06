@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export function CategoryCard({
@@ -19,13 +20,14 @@ export function CategoryCard({
       className="group flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       {image ? (
-        <div className="aspect-[4/3] w-full overflow-hidden bg-muted">
-          {/* biome-ignore lint/performance/noImgElement: mesma ponte das fotos de produto (Storage); migra p/ next/image junto */}
-          <img
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
+          <Image
             src={image}
             alt=""
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            fill
+            // grade da home: 1 coluna no celular, 2 no tablet, 3 no desktop (max-w-6xl)
+            sizes="(min-width: 1024px) 380px, (min-width: 640px) 50vw, 100vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>
       ) : null}

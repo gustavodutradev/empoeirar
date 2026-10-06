@@ -130,6 +130,7 @@ export function CartView() {
                 name={item.productName}
                 src={item.image}
                 className="size-20 shrink-0 rounded-lg border sm:size-24"
+                sizes="96px"
               />
 
               <div className="flex min-w-0 flex-1 flex-col gap-1">
