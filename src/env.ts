@@ -40,6 +40,9 @@ export const env = createEnv({
     // Quem recebe o aviso de "nova venda" quando um pedido e pago (item 12).
     // Opcional: sem ele o aviso e pulado (e registrado no log).
     ORDER_NOTIFY_EMAIL: z.email().optional(),
+    // Segredo que a Vercel envia no header dos crons (item 26). Sem ele a rota
+    // do cron recusa tudo. Gerar com: openssl rand -hex 32
+    CRON_SECRET: z.string().min(32).optional(),
 
     // --- Melhor Envio ---
     // Opcionais: sem o token o checkout mostra "frete a calcular".
