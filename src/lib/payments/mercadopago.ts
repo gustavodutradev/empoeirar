@@ -1,5 +1,6 @@
 import "server-only";
 import { env } from "@/env";
+import { toMercadoPagoDate } from "@/lib/checkout/expiration";
 
 /**
  * Cliente do Mercado Pago (REST, via fetch — sem SDK, sem dependencia extra).
@@ -34,6 +35,11 @@ export type CreatePreferenceInput = {
   backUrl: string; // pra onde o cliente volta depois de pagar
   shippingCents?: number; // frete cobrado junto
   payerEmail?: string;
+  /**
+   * Fim do prazo de pagamento (item 26). Depois disso o link para de aceitar
+   * pagamento e Pix/boleto gerados por ele vencem.
+   */
+  expiresAt: Date;
 };
 
 /**
@@ -79,6 +85,13 @@ export async function createPreference(
         failure: input.backUrl,
       },
       auto_return: "approved",
+      // Validade do link de pagamento e vencimento de Pix/boleto. Sem isso, um
+      // link antigo (num e-mail, por exemplo) aceitaria pagamento de um pedido
+      // ja cancelado por expiracao.
+      expires: true,
+      expiration_date_from: toMercadoPagoDate(new Date()),
+      expiration_date_to: toMercadoPagoDate(input.expiresAt),
+      date_of_expiration: toMercadoPagoDate(input.expiresAt),
       // notification_url NAO vai aqui de proposito: a URL do webhook e a do
       // painel do MP (fonte unica). URL na preferencia sobrescreveria a do
       // painel silenciosamente.
@@ -129,4 +142,24 @@ export async function getPayment(paymentId: string): Promise<MpPayment | null> {
     // Valor em centavos, para cross-check com o total do pedido.
     amountCents: Math.round((data.transaction_amount ?? 0) * 100),
   };
+}
+
+/**
+ * Lista os pagamentos que o MP tem para um pedido (external_reference = id do
+ * pedido). Usado antes de cancelar um pedido não pago (cron de expiração e
+ * botão do cliente): não se cancela pedido com pagamento aprovado ou em
+ * andamento. Lança em erro de rede/API: quem chama NÃO cancela na dúvida.
+ */
+export async function searchPaymentsByOrder(
+  orderId: string,
+): Promise<{ id: string; status: string }[]> {
+  const params = new URLSearchParams({ external_reference: orderId, limit: "50" });
+  const res = await fetch(`${MP_API}/v1/payments/search?${params}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) {
+    throw new Error(`MP searchPayments falhou: ${res.status}`);
+  }
+  const data = (await res.json()) as { results?: { id: number; status: string }[] };
+  return (data.results ?? []).map((p) => ({ id: String(p.id), status: p.status }));
 }

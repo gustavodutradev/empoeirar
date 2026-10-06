@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
+import { CancelOrderButton } from "@/components/site/cancel-order-button";
 import { PayButton } from "@/components/site/pay-button";
+import { isPaymentWindowOpen, paymentDeadline } from "@/lib/checkout/expiration";
 import { isOrderStatus, ORDER_PAGE_HEADLINE } from "@/lib/checkout/status";
 import { buildOrderTimeline } from "@/lib/checkout/timeline";
 import { formatBRL, formatDateTime } from "@/lib/format";
@@ -66,6 +68,8 @@ export default async function OrderPage({ params, searchParams }: Params) {
     ? ORDER_PAGE_HEADLINE[order.status]
     : { title: "Seu pedido", lead: "" };
   const lead = headline.lead.replace("{email}", order.customer_email ?? "seu e-mail");
+  // Prazo de pagamento (item 26). Calculado na renderização: a página é dinâmica.
+  const canPay = isPaymentWindowOpen(order.created_at, new Date());
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
@@ -84,7 +88,22 @@ export default async function OrderPage({ params, searchParams }: Params) {
                 status abaixo é atualizado automaticamente.
               </p>
             ) : null}
-            <PayButton orderId={order.id} />
+            {canPay ? (
+              <>
+                <PayButton orderId={order.id} />
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Pague até {formatDateTime(paymentDeadline(order.created_at).toISOString())}.
+                  Depois disso o pedido é cancelado automaticamente.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                O prazo para pagar este pedido terminou. Se você já pagou, aguarde a confirmação;
+                senão, ele será cancelado automaticamente e você pode fazer um novo pedido pela
+                loja.
+              </p>
+            )}
+            <CancelOrderButton orderId={order.id} />
           </div>
         ) : null}
       </div>

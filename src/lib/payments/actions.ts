@@ -1,6 +1,7 @@
 "use server";
 
 import { env } from "@/env";
+import { isPaymentWindowOpen, paymentDeadline } from "@/lib/checkout/expiration";
 import { reportError } from "@/lib/monitoring/report";
 import { createPreference, isMercadoPagoConfigured } from "@/lib/payments/mercadopago";
 import { allowRequest } from "@/lib/rate-limit";
@@ -46,12 +47,21 @@ export async function startPayment(orderId: string): Promise<StartPaymentResult>
   // RLS garante que só lemos um pedido do próprio usuário.
   const { data: order } = await supabase
     .from("customer_order")
-    .select("id, status, customer_email, shipping_cents")
+    .select("id, status, customer_email, shipping_cents, created_at")
     .eq("id", orderId)
     .maybeSingle();
 
   if (order?.status !== "pending_payment") {
     return { ok: false, error: "Este pedido não está disponível para pagamento." };
+  }
+
+  // Prazo de pagamento (item 26): passou, não cria link novo. O pedido será
+  // cancelado pelo cron; o cliente faz um pedido novo.
+  if (!isPaymentWindowOpen(order.created_at, new Date())) {
+    return {
+      ok: false,
+      error: "O prazo para pagar este pedido terminou. Faça um novo pedido pela loja.",
+    };
   }
 
   const { data: items } = await supabase
@@ -68,6 +78,9 @@ export async function startPayment(orderId: string): Promise<StartPaymentResult>
   try {
     const pref = await createPreference({
       orderId,
+      // O prazo conta da criação do pedido, não do clique: clicar em "Pagar"
+      // de novo no 3º dia não estende o prazo.
+      expiresAt: paymentDeadline(order.created_at),
       payerEmail: order.customer_email ?? undefined,
       backUrl: `${base}/pedido/${orderId}?pagamento=retorno`,
       shippingCents: order.shipping_cents ?? undefined,
