@@ -8,18 +8,31 @@ import { isPaymentWindowOpen, paymentDeadline } from "@/lib/checkout/expiration"
 import { isOrderStatus, ORDER_PAGE_HEADLINE } from "@/lib/checkout/status";
 import { buildOrderTimeline } from "@/lib/checkout/timeline";
 import { formatBRL, formatDateTime } from "@/lib/format";
+import { buildReturnNotice, type ReturnNotice } from "@/lib/payments/return-notice";
+import { getVerifiedReturnPayment } from "@/lib/payments/return-payment";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Seu pedido" };
 
+const NOTICE_TONE: Record<ReturnNotice["tone"], string> = {
+  success: "border-primary/40 bg-primary/5 text-foreground",
+  info: "border-border bg-muted/40 text-foreground",
+  warning: "border-destructive/40 bg-destructive/5 text-foreground",
+};
+
 type Params = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ pagamento?: string }>;
+  // payment_id/collection_id: o Mercado Pago acrescenta à URL de retorno.
+  searchParams: Promise<{
+    pagamento?: string;
+    payment_id?: string | string[];
+    collection_id?: string | string[];
+  }>;
 };
 
 export default async function OrderPage({ params, searchParams }: Params) {
   const { id } = await params;
-  const { pagamento } = await searchParams;
+  const { pagamento, payment_id, collection_id } = await searchParams;
 
   // id malformado nunca chega ao banco (evita erro de cast uuid no Postgres) nem
   // é ecoado no ?next= do login.
@@ -71,6 +84,15 @@ export default async function OrderPage({ params, searchParams }: Params) {
   // Prazo de pagamento (item 26). Calculado na renderização: a página é dinâmica.
   const canPay = isPaymentWindowOpen(order.created_at, new Date());
 
+  // Volta do Mercado Pago com o pedido ainda aguardando (item 48): o status do
+  // pagamento é conferido na API do MP, nunca lido da URL.
+  let returnNotice: ReturnNotice | null = null;
+  if (order.status === "pending_payment" && pagamento === "retorno") {
+    const payment = await getVerifiedReturnPayment(order.id, payment_id ?? collection_id);
+    returnNotice = buildReturnNotice(payment, { canPay });
+  }
+  const showPaymentActions = !returnNotice?.hidePaymentActions;
+
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
       <div className="rounded-xl border bg-card p-5 text-center sm:p-6">
@@ -82,13 +104,16 @@ export default async function OrderPage({ params, searchParams }: Params) {
 
         {order.status === "pending_payment" ? (
           <div className="mt-6">
-            {pagamento === "retorno" ? (
-              <p className="mb-3 text-sm text-muted-foreground">
-                Recebemos seu retorno do Mercado Pago. Assim que o pagamento for confirmado, o
-                status abaixo é atualizado automaticamente.
-              </p>
+            {returnNotice ? (
+              <div
+                role="status"
+                className={`mb-5 rounded-lg border px-4 py-3 text-left text-sm ${NOTICE_TONE[returnNotice.tone]}`}
+              >
+                <p className="font-medium">{returnNotice.title}</p>
+                <p className="mt-1">{returnNotice.text}</p>
+              </div>
             ) : null}
-            {canPay ? (
+            {!showPaymentActions ? null : canPay ? (
               <>
                 <PayButton orderId={order.id} />
                 <p className="mt-3 text-sm text-muted-foreground">
@@ -103,7 +128,7 @@ export default async function OrderPage({ params, searchParams }: Params) {
                 loja.
               </p>
             )}
-            <CancelOrderButton orderId={order.id} />
+            {showPaymentActions ? <CancelOrderButton orderId={order.id} /> : null}
           </div>
         ) : null}
       </div>

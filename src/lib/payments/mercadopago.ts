@@ -109,6 +109,8 @@ export async function createPreference(
 export type MpPayment = {
   id: string;
   status: string;
+  /** Motivo detalhado (ex.: cc_rejected_insufficient_amount, pending_waiting_transfer). */
+  statusDetail: string | null;
   externalReference: string | null;
   amountCents: number;
 };
@@ -120,6 +122,10 @@ export type MpPayment = {
  * reenviar. Nunca confiamos no corpo da notificacao: a verdade vem daqui.
  */
 export async function getPayment(paymentId: string): Promise<MpPayment | null> {
+  // O id entra no caminho da URL da API: só dígitos, sempre. Defesa extra para
+  // quem chamar com valor vindo de fora (URL de retorno, notificação).
+  if (!/^\d{1,20}$/.test(paymentId)) return null;
+
   const res = await fetch(`${MP_API}/v1/payments/${paymentId}`, {
     headers: authHeaders(),
   });
@@ -132,12 +138,14 @@ export async function getPayment(paymentId: string): Promise<MpPayment | null> {
   const data = (await res.json()) as {
     id: number;
     status: string;
+    status_detail?: string | null;
     external_reference: string | null;
     transaction_amount: number | null;
   };
   return {
     id: String(data.id),
     status: data.status,
+    statusDetail: data.status_detail ?? null,
     externalReference: data.external_reference,
     // Valor em centavos, para cross-check com o total do pedido.
     amountCents: Math.round((data.transaction_amount ?? 0) * 100),
