@@ -2,10 +2,17 @@ import type { Metadata, Viewport } from "next";
 import { CartSync } from "@/components/site/cart-sync";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
+import { env } from "@/env";
+import { defaultOpenGraph } from "@/lib/metadata";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  // Base das URLs relativas em metadata (canonical, og:image): o Next as torna
+  // absolutas com este domínio. Em Preview, cai na URL da branch (env.ts).
+  metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
+  openGraph: defaultOpenGraph,
+  twitter: { card: "summary_large_image" },
   title: {
     default: "Empoeirar — moldes e ferramentas para cerâmica",
     template: "%s · Empoeirar",

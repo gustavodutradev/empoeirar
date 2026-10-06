@@ -1,5 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { noIndex } from "@/lib/metadata";
+
+// Reforço do robots.txt: mesmo que alguém linke o admin, o Google não indexa.
+export const metadata: Metadata = { robots: noIndex };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();

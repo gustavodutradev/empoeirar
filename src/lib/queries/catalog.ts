@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
 import { getProductImages, productImageUrl } from "@/lib/product-images";
 import { createClient } from "@/lib/supabase/server";
 
@@ -189,7 +190,13 @@ export async function getProducts(categorySlug?: string): Promise<ProductListIte
   }));
 }
 
-export async function getProductBySlug(slug: string): Promise<ProductWithVariants | null> {
+/**
+ * Em cache() do React: generateMetadata e a página chamam com o mesmo slug no
+ * mesmo request, e assim a consulta roda uma vez só.
+ */
+export const getProductBySlug = cache(async function getProductBySlug(
+  slug: string,
+): Promise<ProductWithVariants | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("product")
@@ -207,4 +214,25 @@ export async function getProductBySlug(slug: string): Promise<ProductWithVariant
   const imgs = await imagesByProduct(supabase, [{ id: product.id, slug: product.slug }]);
   product.images = imgs.get(product.id) ?? [];
   return product;
+});
+
+/**
+ * Dados do sitemap: produtos publicados (com data de alteração) e categorias
+ * da vitrine. Respeita a RLS: rascunho e arquivado não aparecem.
+ */
+export async function getSitemapData(): Promise<{
+  products: { slug: string; updatedAt: string }[];
+  categorySlugs: string[];
+}> {
+  const supabase = await createClient();
+  const [{ data: products, error: pErr }, { data: categories, error: cErr }] = await Promise.all([
+    supabase.from("product").select("slug, updated_at").eq("status", "published").order("slug"),
+    supabase.from("category").select("slug").eq("is_custom_funnel", false).order("sort_order"),
+  ]);
+  if (pErr) throw pErr;
+  if (cErr) throw cErr;
+  return {
+    products: (products ?? []).map((p) => ({ slug: p.slug, updatedAt: p.updated_at })),
+    categorySlugs: (categories ?? []).map((c) => c.slug),
+  };
 }
