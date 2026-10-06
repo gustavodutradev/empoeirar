@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { CategoryCard } from "@/components/site/category-card";
+import { JsonLd } from "@/components/site/json-ld";
 import { ProductCard } from "@/components/site/product-card";
 import { Button } from "@/components/ui/button";
+import { env } from "@/env";
 import { getProductImages } from "@/lib/product-images";
 import { getCategories, getCategoryPreviews, getProducts } from "@/lib/queries/catalog";
+import { absoluteUrl, buildOrganizationJsonLd } from "@/lib/seo";
+import { siteConfig } from "@/lib/site-config";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function Home() {
   const [categories, products, previews] = await Promise.all([
@@ -17,6 +24,16 @@ export default async function Home() {
 
   return (
     <main className="flex flex-1 flex-col">
+      {/* Liga o site ao Instagram para o Google (e, no futuro, ao Perfil da Empresa). */}
+      <JsonLd
+        data={buildOrganizationJsonLd({
+          name: siteConfig.name,
+          url: absoluteUrl(env.NEXT_PUBLIC_SITE_URL, "/"),
+          logo: absoluteUrl(env.NEXT_PUBLIC_SITE_URL, "/logo-empoeirar.png"),
+          sameAs: [siteConfig.instagramUrl],
+          email: siteConfig.email,
+        })}
+      />
       <section className="flex flex-col items-center gap-6 px-4 py-12 text-center sm:px-6 sm:py-20">
         <h1 className="sr-only">Empoeirar</h1>
         {/* biome-ignore lint/performance/noImgElement: logo local em public/, sem otimização remota */}

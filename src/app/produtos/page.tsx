@@ -1,9 +1,31 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductCard } from "@/components/site/product-card";
 import { getCategories, getProducts } from "@/lib/queries/catalog";
 import { cn } from "@/lib/utils";
 
-export const metadata = { title: "Produtos" };
+type SearchParams = { searchParams: Promise<{ categoria?: string }> };
+
+/**
+ * Cada categoria (?categoria=slug) é uma página própria para o Google, com
+ * título e canonical próprios. Só vale para categoria que EXISTE: um valor
+ * qualquer na URL não vira canonical (nem título) de página nenhuma.
+ */
+export async function generateMetadata({ searchParams }: SearchParams): Promise<Metadata> {
+  const { categoria } = await searchParams;
+  const category = categoria
+    ? (await getCategories()).find((c) => c.slug === categoria && !c.is_custom_funnel)
+    : undefined;
+
+  if (!category) {
+    return { title: "Produtos", alternates: { canonical: "/produtos" } };
+  }
+  return {
+    title: `${category.name} · Produtos`,
+    description: category.description ?? undefined,
+    alternates: { canonical: `/produtos?categoria=${encodeURIComponent(category.slug)}` },
+  };
+}
 
 function FilterChip({
   href,
@@ -30,11 +52,7 @@ function FilterChip({
   );
 }
 
-export default async function ProdutosPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ categoria?: string }>;
-}) {
+export default async function ProdutosPage({ searchParams }: SearchParams) {
   const { categoria } = await searchParams;
   const [categories, products] = await Promise.all([getCategories(), getProducts(categoria)]);
   const filters = categories.filter((c) => !c.is_custom_funnel);

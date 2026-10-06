@@ -1,6 +1,9 @@
 import { PagePlaceholder } from "@/components/site/page-placeholder";
 
-export const metadata = { title: "Um molde para chamar de seu!" };
+import { noIndex } from "@/lib/metadata";
+
+// Placeholder: fora do Google até ter conteúdo (e fora do sitemap).
+export const metadata = { title: "Um molde para chamar de seu!", robots: noIndex };
 
 export default function Page() {
   return <PagePlaceholder title="Um molde para chamar de seu!" />;
