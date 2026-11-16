@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@/lib/checkout/status";
+import { type OrderStatus, PAID_STATUSES } from "@/lib/checkout/status";
 
 /**
  * Decide o que um pagamento do Mercado Pago faz com o pedido. Função PURA: o
@@ -60,9 +60,6 @@ export type PaymentDecision =
     }
   | { action: "ignore"; reason: IgnoreReason; alert: boolean };
 
-/** Status do pedido em que ele já está pago (inclui as etapas posteriores). */
-const PAID_OR_LATER: ReadonlySet<string> = new Set(["paid", "preparing", "shipped", "delivered"]);
-
 const ignore = (reason: IgnoreReason, alert = false): PaymentDecision => ({
   action: "ignore",
   reason,
@@ -85,7 +82,7 @@ export function decidePaymentTransition(
           paymentId: payment.id,
         };
       }
-      if (PAID_OR_LATER.has(order.status)) {
+      if (PAID_STATUSES.has(order.status as OrderStatus)) {
         // Mesmo pagamento de novo = reenvio do MP. Outro pagamento = cliente
         // pagou duas vezes: alguém precisa estornar um deles.
         return payment.id === order.mpPaymentId

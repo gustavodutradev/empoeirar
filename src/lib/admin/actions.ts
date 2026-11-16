@@ -1,6 +1,7 @@
 "use server";
 
-import { ORDER_STATUS, type OrderStatus } from "@/lib/checkout/status";
+import { isOrderStatus, ORDER_STATUS } from "@/lib/checkout/status";
+import { canAdminTransition, isBackwardMove } from "@/lib/checkout/transitions";
 import { sendOrderStatusEmail } from "@/lib/email/order-notification";
 import { reportError } from "@/lib/monitoring/report";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -8,16 +9,16 @@ import { createClient } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
-const VALID_STATUSES = Object.keys(ORDER_STATUS) as OrderStatus[];
-
 /**
  * Muda o status de um pedido (ação de admin).
  *
  * Fronteira de confiança:
  *  1. getUser — precisa estar logado.
  *  2. is_admin() no banco — precisa SER admin (nunca confia na UI).
- *  3. só então usa o cliente service_role para chamar advance_order_status
- *     (idempotente), que registra o evento na linha do tempo do cliente.
+ *  3. A transição precisa ser permitida (canAdminTransition), a partir do
+ *     status ATUAL lido no banco, não do que a tela mostrava.
+ *  4. advance_order_status com p_expected_status: se um webhook (estorno, por
+ *     exemplo) mudou o pedido entre a leitura e a escrita, nada é gravado.
  */
 export async function adminAdvanceOrder(orderId: string, status: string): Promise<Result> {
   const supabase = await createClient();
@@ -30,16 +31,36 @@ export async function adminAdvanceOrder(orderId: string, status: string): Promis
   const { data: isAdmin } = await supabase.rpc("is_admin");
   if (!isAdmin) return { ok: false, error: "Sem permissão." };
 
-  if (!VALID_STATUSES.includes(status as OrderStatus)) {
+  if (!isOrderStatus(status)) {
     return { ok: false, error: "Status inválido." };
   }
 
   const admin = createAdminClient();
+  const { data: order, error: readError } = await admin
+    .from("customer_order")
+    .select("status")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (readError) {
+    await reportError("adminAdvanceOrder: leitura", readError.message, { pedido: orderId });
+    return { ok: false, error: "Não foi possível atualizar o status." };
+  }
+  if (!order || !isOrderStatus(order.status)) {
+    return { ok: false, error: "Pedido não encontrado." };
+  }
+
+  const current = order.status;
+  if (!canAdminTransition(current, status)) {
+    return { ok: false, error: "Essa mudança de status não é permitida." };
+  }
+
   const { data: changed, error } = await admin.rpc("advance_order_status", {
     p_order_id: orderId,
     p_status: status,
-    p_note: ORDER_STATUS[status as OrderStatus].description,
+    p_note: ORDER_STATUS[status].description,
     p_mp_payment_id: null,
+    p_expected_status: current,
   });
 
   if (error) {
@@ -47,9 +68,15 @@ export async function adminAdvanceOrder(orderId: string, status: string): Promis
     return { ok: false, error: "Não foi possível atualizar o status." };
   }
 
-  // Notifica o cliente só quando o status muda de fato (não em re-clique no
-  // mesmo status). sendOrderStatusEmail ignora status fora do escopo v1.
-  if (changed === true) {
+  if (changed !== true) {
+    // Outro processo mudou o pedido entre a leitura e a escrita.
+    return { ok: false, error: "O pedido mudou enquanto você editava. Recarregue a página." };
+  }
+
+  // Notifica o cliente só em avanço real. Desfazer uma etapa (ex.: Entregue ->
+  // Enviado) não reenvia o e-mail que ele já recebeu. sendOrderStatusEmail
+  // ainda ignora status fora do escopo dos e-mails.
+  if (!isBackwardMove(current, status)) {
     await sendOrderStatusEmail(orderId, status);
   }
 

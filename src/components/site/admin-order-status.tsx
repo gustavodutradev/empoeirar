@@ -4,14 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { adminAdvanceOrder } from "@/lib/admin/actions";
-import { ORDER_STATUS } from "@/lib/checkout/status";
-
-const OPTIONS = Object.entries(ORDER_STATUS).map(([value, meta]) => ({ value, label: meta.label }));
+import { isOrderStatus, ORDER_STATUS, statusLabel } from "@/lib/checkout/status";
+import { ADMIN_TRANSITIONS, isBackwardMove } from "@/lib/checkout/transitions";
 
 /**
- * Controle de status do pedido (admin). Chama o server action, que re-checa
- * is_admin no servidor e registra o evento na linha do tempo. Depois do sucesso,
- * router.refresh() recarrega o detalhe (status + timeline atualizados).
+ * Controle de status do pedido (admin). Mostra só as mudanças permitidas a
+ * partir do status atual (ADMIN_TRANSITIONS). Isso é conforto de UI: o server
+ * action valida de novo, a partir do status lido no banco.
  */
 export function AdminOrderStatus({
   orderId,
@@ -21,11 +20,23 @@ export function AdminOrderStatus({
   currentStatus: string;
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState(currentStatus);
+  const options = isOrderStatus(currentStatus) ? ADMIN_TRANSITIONS[currentStatus] : [];
+  const [status, setStatus] = useState<string>(options[0] ?? "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
+  if (options.length === 0) {
+    return (
+      <div className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">
+        {currentStatus === "pending_payment"
+          ? "Aguardando pagamento: o status muda sozinho quando o Mercado Pago confirmar."
+          : `Pedido ${statusLabel(currentStatus).toLowerCase()}: o status não pode ser alterado aqui.`}
+      </div>
+    );
+  }
+
   async function save() {
+    if (status === "cancelled" && !window.confirm(CANCEL_CONFIRM)) return;
     setSaving(true);
     setMessage(null);
     const res = await adminAdvanceOrder(orderId, status);
@@ -47,17 +58,28 @@ export function AdminOrderStatus({
           onChange={(e) => setStatus(e.target.value)}
           className="h-10 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
-          {OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
+          {options.map((value) => (
+            <option key={value} value={value}>
+              {isOrderStatus(currentStatus) && isBackwardMove(currentStatus, value)
+                ? `Voltar para: ${ORDER_STATUS[value].label}`
+                : ORDER_STATUS[value].label}
             </option>
           ))}
         </select>
-        <Button type="button" onClick={save} disabled={saving || status === currentStatus}>
+        <Button type="button" onClick={save} disabled={saving || !status}>
           {saving ? "Salvando…" : "Atualizar"}
         </Button>
       </div>
+      {status === "cancelled" ? (
+        <p className="text-sm text-destructive">
+          Cancelar não devolve o dinheiro. Se o pedido já foi pago, faça o estorno no painel do
+          Mercado Pago.
+        </p>
+      ) : null}
       {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
     </div>
   );
 }
+
+const CANCEL_CONFIRM =
+  "Cancelar este pedido? O cliente vê o pedido como cancelado. O estorno do pagamento é feito à parte, no painel do Mercado Pago.";

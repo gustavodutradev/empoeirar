@@ -6,6 +6,10 @@ export const ORDER_STATUS = {
   pending_payment: { label: "Pedido recebido", description: "Aguardando pagamento." },
   paid: { label: "Pagamento confirmado", description: "Pagamento aprovado." },
   preparing: { label: "Em preparação", description: "Seu pedido está sendo preparado." },
+  ready_to_ship: {
+    label: "Pronto para envio",
+    description: "Pedido embalado e aguardando a coleta.",
+  },
   shipped: { label: "Enviado", description: "A caminho da entrega." },
   delivered: { label: "Entregue", description: "Pedido entregue." },
   cancelled: { label: "Cancelado", description: "Pedido cancelado." },
@@ -18,9 +22,20 @@ export const ORDER_FLOW: OrderStatus[] = [
   "pending_payment",
   "paid",
   "preparing",
+  "ready_to_ship",
   "shipped",
   "delivered",
 ];
+
+/**
+ * Status em que o pedido já está pago: "paid" e tudo que vem depois dele no
+ * fluxo. DERIVADO de ORDER_FLOW de propósito: antes era uma lista escrita à
+ * mão em payment-transition.ts, e um status novo que não fosse lembrado lá
+ * fazia um reenvio de "aprovado" parecer pagamento em pedido cancelado.
+ */
+export const PAID_STATUSES: ReadonlySet<OrderStatus> = new Set(
+  ORDER_FLOW.slice(ORDER_FLOW.indexOf("paid")),
+);
 
 export function statusLabel(status: string): string {
   return (ORDER_STATUS as Record<string, { label: string }>)[status]?.label ?? status;
@@ -48,6 +63,10 @@ export const ORDER_PAGE_HEADLINE: Record<OrderStatus, { title: string; lead: str
   preparing: {
     title: "Seu pedido está em preparação",
     lead: "Cada peça é feita à mão. Avisamos em {email} assim que o pedido sair para entrega.",
+  },
+  ready_to_ship: {
+    title: "Seu pedido está pronto para envio",
+    lead: "Já está embalado e sai nos próximos dias. Avisamos em {email} assim que for enviado.",
   },
   shipped: {
     title: "Seu pedido está a caminho",

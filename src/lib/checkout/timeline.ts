@@ -26,6 +26,7 @@ export type TimelineStep = {
  *
  * Regras:
  * - Pedido ativo: régua completa do ORDER_FLOW, com as etapas futuras apagadas.
+ *   Etapas anteriores ao status atual que nunca aconteceram (puladas) somem.
  * - Pedido cancelado: só as etapas que aconteceram ANTES do cancelamento,
  *   seguidas da etapa "Cancelado". Etapas futuras somem, porque não vão
  *   acontecer e mostrá-las apagadas sugeriria que o pedido ainda anda.
@@ -41,9 +42,14 @@ export function buildOrderTimeline(
   const sorted = [...events].sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
 
   if (currentStatus !== "cancelled") {
-    return ORDER_FLOW.map((status) => {
+    const currentIndex = ORDER_FLOW.indexOf(currentStatus as OrderStatus);
+    return ORDER_FLOW.flatMap((status, index) => {
       const event = lastEventOf(sorted, status);
-      return toStep(status, event, event !== undefined, "default");
+      // Etapa ANTERIOR ao status atual que nunca aconteceu foi pulada (ex.: peça
+      // de pronta entrega vai de "pago" direto para "pronto para envio"). Ela
+      // não vai mais acontecer, então some em vez de aparecer apagada no meio.
+      if (!event && currentIndex !== -1 && index < currentIndex) return [];
+      return [toStep(status, event, event !== undefined, "default")];
     });
   }
 
