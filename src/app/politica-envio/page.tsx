@@ -1,11 +1,30 @@
 import { LegalPage } from "@/components/site/legal-page";
+import { formatBRL } from "@/lib/format";
 import { siteConfig } from "@/lib/site-config";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Política de envio" };
 
-export default function Page() {
+// Bairros e tarifa da entrega local vêm do banco (o Jane edita pelo admin),
+// então o texto nunca fica desatualizado em relação ao checkout.
+
+export default async function Page() {
+  const supabase = await createClient();
+  const [{ data: config }, { data: districts }] = await Promise.all([
+    supabase
+      .from("local_delivery_config")
+      .select("enabled, price_cents, delivery_days")
+      .eq("id", 1)
+      .maybeSingle(),
+    supabase.from("local_delivery_district").select("name").order("name"),
+  ]);
+  const local =
+    config?.enabled && districts && districts.length > 0
+      ? { config, names: districts.map((d) => d.name as string) }
+      : null;
+
   return (
-    <LegalPage title="Política de Envio" updatedAt="29 de agosto de 2026">
+    <LegalPage title="Política de Envio" updatedAt="16 de novembro de 2026">
       <p>
         Esta Política explica como funcionam a produção e o envio dos produtos da Empoeirar. Como
         cada peça é feita à mão, os prazos combinam o tempo de produção com o tempo de transporte.
@@ -24,6 +43,16 @@ export default function Page() {
         conforme o CEP de destino, e você escolhe entre as opções disponíveis antes de finalizar o
         pedido.
       </p>
+      {local ? (
+        <p>
+          <strong>Entrega local em Belo Horizonte.</strong> Nos bairros{" "}
+          {new Intl.ListFormat("pt-BR", { type: "conjunction" }).format(local.names)}, a entrega é
+          feita pelo próprio ateliê, por {formatBRL(local.config.price_cents)}, em até{" "}
+          {local.config.delivery_days} dia(s) úteis depois que o pedido fica pronto. A opção aparece
+          no checkout automaticamente quando o CEP de entrega é de um desses bairros, conforme a
+          base de CEPs dos Correios.
+        </p>
+      ) : null}
 
       <h2>3. Prazo de transporte</h2>
       <p>

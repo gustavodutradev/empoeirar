@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { reportError } from "@/lib/monitoring/report";
 import { allowRequest, clientIp } from "@/lib/rate-limit";
+import { quoteLocalDelivery } from "@/lib/shipping/local-delivery-server";
 import type { FreightOption } from "@/lib/shipping/melhor-envio";
 import { isMelhorEnvioConfigured } from "@/lib/shipping/melhor-envio";
 import { quoteFreight } from "@/lib/shipping/quote";
@@ -25,13 +26,12 @@ type FreightResult =
  * Retorna as opcoes de frete para o CEP + carrinho. Chamada pelo checkout
  * quando o cliente preenche o CEP. Os itens carregam so {variantId, quantity};
  * dimensoes e preco saem do banco (em quoteFreight).
+ *
+ * A entrega local em BH (quando o CEP atende) vem primeiro e nao depende do
+ * Melhor Envio: se ele estiver fora do ar ou sem token, ela continua aparecendo.
  */
 export async function getFreightOptions(input: unknown): Promise<FreightResult> {
-  if (!isMelhorEnvioConfigured()) {
-    return { ok: false, unconfigured: true, error: "Cálculo de frete indisponível no momento." };
-  }
-
-  // Rate limit por IP: cada cotação chama a API do Melhor Envio. Limita
+  // Rate limit por IP: cada cotação chama ViaCEP e Melhor Envio. Limita
   // abuso/scraping do cálculo de frete sem atrapalhar o checkout normal.
   const ip = clientIp(await headers());
   if (!(await allowRequest(createAdminClient(), `freight:${ip}`, 40, 60))) {
@@ -44,14 +44,29 @@ export async function getFreightOptions(input: unknown): Promise<FreightResult> 
   const cep = onlyDigits(parsed.data.toCep);
   if (cep.length !== 8) return { ok: false, error: "CEP inválido." };
 
-  try {
-    const options = await quoteFreight(cep, parsed.data.items);
-    if (options.length === 0) {
-      return { ok: false, error: "Nenhuma opção de frete para este CEP." };
-    }
-    return { ok: true, options };
-  } catch (err) {
-    await reportError("getFreightOptions", err);
-    return { ok: false, error: "Não foi possível calcular o frete agora." };
+  const meConfigured = isMelhorEnvioConfigured();
+  const [local, carriers] = await Promise.all([
+    quoteLocalDelivery(cep).catch(async (err) => {
+      await reportError("getFreightOptions: entrega local", err);
+      return null;
+    }),
+    meConfigured
+      ? quoteFreight(cep, parsed.data.items).then(
+          (options) => ({ ok: true as const, options }),
+          async (err) => {
+            await reportError("getFreightOptions", err);
+            return { ok: false as const, options: [] as FreightOption[] };
+          },
+        )
+      : Promise.resolve({ ok: true as const, options: [] as FreightOption[] }),
+  ]);
+
+  const options = [...(local ? [local] : []), ...carriers.options];
+  if (options.length > 0) return { ok: true, options };
+
+  if (!meConfigured) {
+    return { ok: false, unconfigured: true, error: "Cálculo de frete indisponível no momento." };
   }
+  if (!carriers.ok) return { ok: false, error: "Não foi possível calcular o frete agora." };
+  return { ok: false, error: "Nenhuma opção de frete para este CEP." };
 }
