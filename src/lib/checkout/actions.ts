@@ -4,6 +4,8 @@ import { createOrderInputSchema } from "@/lib/checkout/schema";
 import { sendOrderStatusEmail } from "@/lib/email/order-notification";
 import { reportError } from "@/lib/monitoring/report";
 import { allowRequest } from "@/lib/rate-limit";
+import { LOCAL_DELIVERY_ID, LOCAL_DELIVERY_NAME } from "@/lib/shipping/local-delivery";
+import { quoteLocalDelivery } from "@/lib/shipping/local-delivery-server";
 import { quoteFreight } from "@/lib/shipping/quote";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,8 +20,8 @@ type CreateOrderResult = { ok: true; orderId: string } | { ok: false; error: str
  *  3. email vem de user.email (a identidade autenticada), NAO do que o cliente
  *     mandou — o campo do form e so exibicao.
  *  4. FRETE recalculado: o cliente manda so o id do servico escolhido; o
- *     servidor cota de novo no Melhor Envio e usa o preco autoritativo. Preco
- *     de frete forjado no cliente e ignorado.
+ *     servidor cota de novo (Melhor Envio, ou a entrega local pelo CEP) e usa
+ *     o preco autoritativo. Preco de frete forjado no cliente e ignorado.
  *  5. rpc create_order — recalcula precos dos itens do banco, soma o frete e
  *     insere atomico.
  */
@@ -49,7 +51,19 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
   // no preço que veio do cliente).
   let shippingCents: number | null = null;
   let shippingService: string | null = null;
-  if (shippingServiceId != null) {
+  if (shippingServiceId === LOCAL_DELIVERY_ID) {
+    // Entrega local: elegibilidade e preço recalculados aqui, a partir do CEP
+    // (bairro da ViaCEP) e da tarifa do banco. O bairro digitado não decide nada.
+    const local = await quoteLocalDelivery(address.cep).catch(() => null);
+    if (!local) {
+      return {
+        ok: false,
+        error: "A entrega local não atende este CEP. Selecione outra opção de frete.",
+      };
+    }
+    shippingCents = local.priceCents;
+    shippingService = LOCAL_DELIVERY_NAME;
+  } else if (shippingServiceId != null) {
     try {
       const options = await quoteFreight(address.cep, items);
       const chosen = options.find((o) => o.id === shippingServiceId);

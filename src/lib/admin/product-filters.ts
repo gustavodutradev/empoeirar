@@ -1,3 +1,5 @@
+import { normalizeText } from "@/lib/text";
+
 /**
  * Filtros da lista de produtos do admin, lidos da URL.
  *
@@ -71,12 +73,7 @@ export function parseProductFilters(
 }
 
 /** Busca sem acento e sem diferença de maiúsculas: "regua" acha "Régua". */
-export function normalizeText(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
-}
+export { normalizeText };
 
 const isMissing = (n: number | null) => n == null || n <= 0;
 
