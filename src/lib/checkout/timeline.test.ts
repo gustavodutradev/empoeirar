@@ -18,6 +18,7 @@ describe("buildOrderTimeline", () => {
       "pending_payment",
       "paid",
       "preparing?",
+      "ready_to_ship?",
       "shipped?",
       "delivered?",
     ]);
@@ -66,6 +67,7 @@ describe("buildOrderTimeline", () => {
       "pending_payment",
       "paid",
       "preparing?",
+      "ready_to_ship?",
       "shipped?",
       "delivered?",
     ]);
@@ -100,5 +102,20 @@ describe("buildOrderTimeline", () => {
     const steps = buildOrderTimeline("pending_payment", []);
     expect(steps.every((s) => !s.reached)).toBe(true);
     expect(steps[0].description).toBe("Aguardando pagamento.");
+  });
+
+  it('pronta entrega (pago -> pronto para envio) não mostra "Em preparação" apagado no meio', () => {
+    const steps = buildOrderTimeline("ready_to_ship", [
+      ev("pending_payment", "01"),
+      ev("paid", "02"),
+      ev("ready_to_ship", "03"),
+    ]);
+    expect(summary(steps)).toEqual([
+      "pending_payment",
+      "paid",
+      "ready_to_ship",
+      "shipped?",
+      "delivered?",
+    ]);
   });
 });

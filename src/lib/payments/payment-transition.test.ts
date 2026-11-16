@@ -166,3 +166,30 @@ describe("decidePaymentTransition — demais status", () => {
     }
   });
 });
+
+describe('decidePaymentTransition — pedido em "pronto para envio"', () => {
+  const readyOrder: OrderSnapshot = { ...paidOrder, status: "ready_to_ship" };
+
+  it("reenvio do mesmo pagamento aprovado é ignorado sem alerta (já pago)", () => {
+    expect(decidePaymentTransition(readyOrder, pay("approved"))).toEqual({
+      action: "ignore",
+      reason: "already_paid",
+      alert: false,
+    });
+  });
+
+  it("outro pagamento aprovado é pagamento duplicado, com alerta", () => {
+    expect(decidePaymentTransition(readyOrder, pay("approved", "222"))).toMatchObject({
+      action: "ignore",
+      reason: "duplicate_payment",
+      alert: true,
+    });
+  });
+
+  it.each(["refunded", "charged_back"])("%s do pagamento do pedido cancela o pedido", (status) => {
+    expect(decidePaymentTransition(readyOrder, pay(status))).toMatchObject({
+      action: "advance",
+      to: "cancelled",
+    });
+  });
+});

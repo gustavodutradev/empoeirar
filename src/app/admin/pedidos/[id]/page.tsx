@@ -51,7 +51,9 @@ export default async function AdminOrderDetail({ params }: Params) {
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="md:col-span-2">
-          <AdminOrderStatus orderId={order.id} currentStatus={order.status} />
+          {/* key: remonta o controle quando o status muda, para a opção selecionada
+              acompanhar as novas transições permitidas. */}
+          <AdminOrderStatus key={order.status} orderId={order.id} currentStatus={order.status} />
         </div>
 
         <section className="rounded-xl border bg-card p-4 text-sm">
