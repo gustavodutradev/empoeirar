@@ -8,6 +8,7 @@ import { env } from "@/env";
 import { defaultOpenGraph } from "@/lib/metadata";
 import { getProductBySlug } from "@/lib/queries/catalog";
 import { absoluteUrl, buildProductJsonLd, ogImagePath, productDescription } from "@/lib/seo";
+import { PRODUCTION_DAYS, READY_STOCK_NOTE } from "@/lib/shipping/deadline";
 import { siteConfig } from "@/lib/site-config";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -101,6 +102,14 @@ export default async function ProductPage({ params }: Params) {
             productSlug={product.slug}
             image={images[0]}
           />
+
+          <div className="rounded-lg bg-secondary/60 p-3 text-sm text-foreground/85">
+            <p className="font-medium">Prazo</p>
+            <p className="mt-0.5">
+              Feito à mão: até {PRODUCTION_DAYS} dias de produção a partir da confirmação do
+              pagamento, mais o prazo do frete (calculado no checkout). {READY_STOCK_NOTE}
+            </p>
+          </div>
 
           {product.material_care ? (
             <div className="border-t pt-4 text-base">

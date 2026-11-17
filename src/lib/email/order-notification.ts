@@ -35,7 +35,7 @@ export async function sendOrderStatusEmail(orderId: string, status: string): Pro
     const { data: order } = await admin
       .from("customer_order")
       .select(
-        "id, customer_name, customer_email, subtotal_cents, shipping_cents, total_cents, ship_cep, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state",
+        "id, customer_name, customer_email, subtotal_cents, shipping_cents, total_cents, tracking_code, ship_cep, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state",
       )
       .eq("id", orderId)
       .maybeSingle();
@@ -70,6 +70,7 @@ export async function sendOrderStatusEmail(orderId: string, status: string): Pro
         lineTotalCents: i.line_total_cents,
       })),
       siteUrl: env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, ""),
+      trackingCode: order.tracking_code,
     });
 
     await sendEmail({ to: order.customer_email, subject, html });
