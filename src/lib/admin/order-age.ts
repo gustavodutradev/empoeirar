@@ -12,8 +12,10 @@
  * Vercel roda em UTC, então o fuso precisa ser explícito.
  */
 
+import { PRODUCTION_DAYS } from "@/lib/shipping/deadline";
+
 /** Prazo de produção dos termos ("até 10 dias"). */
-export const PRODUCTION_DEADLINE_DAYS = 10;
+export const PRODUCTION_DEADLINE_DAYS = PRODUCTION_DAYS;
 
 /** A partir de quantos dias o contador fica amarelo. */
 export const WARNING_FROM_DAYS = PRODUCTION_DEADLINE_DAYS - 3;

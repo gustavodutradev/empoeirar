@@ -10,6 +10,7 @@ import { createOrder } from "@/lib/checkout/actions";
 import { checkoutFormSchema } from "@/lib/checkout/schema";
 import { formatBRL } from "@/lib/format";
 import { getFreightOptions } from "@/lib/shipping/actions";
+import { PRODUCTION_DAYS, READY_STOCK_NOTE, totalDeadlineLabel } from "@/lib/shipping/deadline";
 
 type Prefill = { full_name: string; phone: string; cpf: string; email: string };
 
@@ -68,6 +69,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [cepLoading, setCepLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [freight, setFreight] = useState<FreightOption[]>([]);
   const [freightId, setFreightId] = useState<number | null>(null);
@@ -150,6 +152,10 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
       setGeneralError("Escolha uma opção de frete.");
       return;
     }
+    if (!acceptedTerms) {
+      setGeneralError("Para continuar, aceite os termos de uso e a política de trocas.");
+      return;
+    }
 
     const v = result.data;
     setSubmitting(true);
@@ -166,6 +172,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
       },
       items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
       shippingServiceId: freightId ?? undefined,
+      acceptedTerms,
     });
     setSubmitting(false);
 
@@ -355,12 +362,16 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
                       </span>
                     ) : null}
                     <span className="block text-sm text-muted-foreground">
-                      até {option.deliveryDays} dia(s) úteis
+                      {totalDeadlineLabel(option.deliveryDays)}
                     </span>
                   </span>
                   <span className="tabular-nums">{formatBRL(option.priceCents)}</span>
                 </label>
               ))}
+              <p className="text-sm text-muted-foreground">
+                Cada peça é feita à mão: a produção leva até {PRODUCTION_DAYS} dias a partir da
+                confirmação do pagamento. {READY_STOCK_NOTE}
+              </p>
             </div>
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
@@ -384,13 +395,33 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
           <span className="tabular-nums">{formatBRL(total)}</span>
         </div>
 
+        <label className="mt-6 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-0.5 size-4 shrink-0 accent-primary"
+          />
+          <span>
+            Li e aceito os{" "}
+            <a href="/termos" target="_blank" rel="noopener" className="underline">
+              termos de uso
+            </a>{" "}
+            e a{" "}
+            <a href="/trocas-devolucoes" target="_blank" rel="noopener" className="underline">
+              política de trocas e devoluções
+            </a>
+            .
+          </span>
+        </label>
+
         {generalError ? (
           <p role="alert" className="mt-4 text-sm text-destructive">
             {generalError}
           </p>
         ) : null}
 
-        <Button type="submit" size="lg" className="mt-6 w-full text-base" disabled={submitting}>
+        <Button type="submit" size="lg" className="mt-4 w-full text-base" disabled={submitting}>
           {submitting ? "Criando pedido…" : "Criar pedido"}
         </Button>
         <p className="mt-2 text-center text-xs text-muted-foreground">

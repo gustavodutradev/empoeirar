@@ -55,6 +55,9 @@ export const createOrderInputSchema = z.object({
   // (ME não configurado, ou sem seleção), o pedido nasce com frete a calcular.
   // O PREÇO nunca vem do cliente — só este id; o servidor recalcula.
   shippingServiceId: z.number().int().optional(),
+  // Aceite dos termos e da política de trocas, conferido também no servidor
+  // (um checkbox só no navegador seria fácil de pular).
+  acceptedTerms: z.literal(true, "Para continuar, aceite os termos de uso e a política de trocas."),
 });
 
 export type CustomerInput = z.input<typeof customerSchema>;

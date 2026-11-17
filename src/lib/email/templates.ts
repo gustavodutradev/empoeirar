@@ -1,4 +1,5 @@
 import { formatBRL } from "@/lib/format";
+import { trackingUrl } from "@/lib/shipping/tracking";
 
 /**
  * Templates dos e-mails transacionais de pedido. HTML compatível com clientes
@@ -29,6 +30,8 @@ export type OrderEmailData = {
   };
   items: { name: string; variant: string; quantity: number; lineTotalCents: number }[];
   siteUrl: string;
+  /** Só no e-mail de "enviado", quando o admin salvou o código antes. */
+  trackingCode?: string | null;
 };
 
 function escapeHtml(s: string): string {
@@ -149,6 +152,11 @@ export function buildOrderEmail(
         <tr><td style="padding:20px 32px 8px;">
           <a href="${orderUrl}" style="display:inline-block;background:${ACCENT};color:#ffffff;text-decoration:none;font-size:15px;padding:12px 24px;border-radius:8px;">Acompanhar pedido</a>
           ${c.payNote ? `<p style="margin:12px 0 0;color:${MUTED};font-size:13px;">Você também pode concluir o pagamento por esse link.</p>` : ""}
+          ${
+            status === "shipped" && data.trackingCode
+              ? `<p style="margin:12px 0 0;color:${MUTED};font-size:14px;">Código de rastreio: <a href="${escapeHtml(trackingUrl(data.trackingCode))}" style="color:${ACCENT};">${escapeHtml(data.trackingCode)}</a></p>`
+              : ""
+          }
         </td></tr>
 
         <!-- Itens -->

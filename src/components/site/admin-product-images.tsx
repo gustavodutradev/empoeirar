@@ -4,35 +4,9 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { deleteProductImage, setPrimaryImage, uploadProductImage } from "@/lib/admin/image-actions";
+import { compressImage as compress } from "@/lib/images/compress";
 
 type Img = { id: string; url: string; isPrimary: boolean };
-
-/**
- * Comprime/redimensiona a imagem no navegador antes de subir: no máximo 1600px
- * no lado maior, re-encodada em WebP. Deixa o arquivo pequeno (rápido e leve no
- * site) e evita os limites de body do server action. Se algo falhar, sobe o
- * original.
- */
-async function compress(file: File): Promise<File> {
-  try {
-    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const MAX = 1600;
-    const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
-    const w = Math.round(bitmap.width * scale);
-    const h = Math.round(bitmap.height * scale);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/webp", 0.85));
-    if (!blob) return file;
-    return new File([blob], "foto.webp", { type: "image/webp" });
-  } catch {
-    return file;
-  }
-}
 
 export function AdminProductImages({ productId, images }: { productId: string; images: Img[] }) {
   const router = useRouter();

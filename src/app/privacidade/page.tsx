@@ -5,7 +5,7 @@ export const metadata = { title: "Política de privacidade" };
 
 export default function Page() {
   return (
-    <LegalPage title="Política de Privacidade" updatedAt="29 de agosto de 2026">
+    <LegalPage title="Política de Privacidade" updatedAt="17 de novembro de 2026">
       <p>
         Esta Política descreve como a Empoeirar coleta, usa, compartilha e protege seus dados
         pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD).
@@ -36,6 +36,11 @@ export default function Page() {
         <li>
           <strong>Comunicações:</strong> mensagens que você nos envia por formulário, e-mail ou
           WhatsApp.
+        </li>
+        <li>
+          <strong>Pedido de molde personalizado:</strong> nome, e-mail, telefone (opcional),
+          descrição e as fotos que você enviar. Eles seguem direto para o e-mail do ateliê, só para
+          responder o seu pedido, e não ficam guardados no site.
         </li>
       </ul>
       <p>Não coletamos dados pessoais sensíveis.</p>

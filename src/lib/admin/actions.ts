@@ -1,9 +1,11 @@
 "use server";
 
+import { z } from "zod";
 import { isOrderStatus, ORDER_STATUS } from "@/lib/checkout/status";
 import { canAdminTransition, isBackwardMove } from "@/lib/checkout/transitions";
 import { sendOrderStatusEmail } from "@/lib/email/order-notification";
 import { reportError } from "@/lib/monitoring/report";
+import { normalizeTrackingCode } from "@/lib/shipping/tracking";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -80,5 +82,42 @@ export async function adminAdvanceOrder(orderId: string, status: string): Promis
     await sendOrderStatusEmail(orderId, status);
   }
 
+  return { ok: true };
+}
+
+/**
+ * Grava (ou apaga, com texto vazio) o código de rastreio do pedido.
+ *
+ * A autorização está no banco: set_order_tracking é SECURITY DEFINER e checa
+ * is_admin() lá dentro. O check aqui só evita a chamada e dá uma mensagem
+ * melhor. O código é normalizado aqui e de novo no banco.
+ */
+export async function adminSetTrackingCode(orderId: string, code: string): Promise<Result> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Não autenticado." };
+
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (!isAdmin) return { ok: false, error: "Sem permissão." };
+
+  if (!z.uuid().safeParse(orderId).success) return { ok: false, error: "Pedido inválido." };
+
+  const raw = typeof code === "string" ? code.slice(0, 80) : "";
+  const normalized = raw.trim() === "" ? null : normalizeTrackingCode(raw);
+  if (raw.trim() !== "" && !normalized) {
+    return { ok: false, error: "Código inválido. Use só letras e números (5 a 40)." };
+  }
+
+  const { error } = await supabase.rpc("set_order_tracking", {
+    p_order_id: orderId,
+    p_code: normalized,
+  });
+  if (error) {
+    await reportError("adminSetTrackingCode", error.message, { pedido: orderId });
+    return { ok: false, error: "Não foi possível salvar o código." };
+  }
   return { ok: true };
 }

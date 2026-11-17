@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminOrderStatus } from "@/components/site/admin-order-status";
+import { AdminOrderTracking } from "@/components/site/admin-order-tracking";
 import { requireAdmin } from "@/lib/admin/guard";
 import { statusLabel } from "@/lib/checkout/status";
 import { formatBRL, formatDateTime } from "@/lib/format";
@@ -55,6 +56,16 @@ export default async function AdminOrderDetail({ params }: Params) {
               acompanhar as novas transições permitidas. */}
           <AdminOrderStatus key={order.status} orderId={order.id} currentStatus={order.status} />
         </div>
+
+        {order.status !== "cancelled" && order.status !== "pending_payment" ? (
+          <div className="md:col-span-2">
+            <AdminOrderTracking
+              key={order.tracking_code ?? ""}
+              orderId={order.id}
+              currentCode={order.tracking_code}
+            />
+          </div>
+        ) : null}
 
         <section className="rounded-xl border bg-card p-4 text-sm">
           <h2 className="font-display text-lg text-primary">Cliente</h2>

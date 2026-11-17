@@ -17,6 +17,7 @@ const base = {
     state: "mg",
   },
   items: [{ variantId: "0b0c3c1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e", quantity: 2 }],
+  acceptedTerms: true,
 };
 
 describe("createOrderInputSchema", () => {
@@ -54,5 +55,11 @@ describe("createOrderInputSchema", () => {
     ["e-mail inválido", { customer: { ...base.customer, email: "maria@" } }],
   ])("rejeita: %s", (_name, override) => {
     expect(createOrderInputSchema.safeParse({ ...base, ...override }).success).toBe(false);
+  });
+});
+
+describe("createOrderInputSchema — aceite dos termos", () => {
+  it.each([false, undefined, "true", 1])("recusa pedido sem aceite (%j)", (acceptedTerms) => {
+    expect(createOrderInputSchema.safeParse({ ...base, acceptedTerms }).success).toBe(false);
   });
 });

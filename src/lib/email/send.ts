@@ -35,10 +35,15 @@ export function isEmailConfigured(): boolean {
   return Boolean(env.SMTP_USER && env.SMTP_PASS);
 }
 
+export type EmailAttachment = { filename: string; content: Buffer; contentType: string };
+
 export async function sendEmail(input: {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
+  /** Endereço para "Responder". Já validado por quem chama. */
+  replyTo?: string;
+  attachments?: EmailAttachment[];
 }): Promise<boolean> {
   const t = getTransport();
   if (!t) {
@@ -51,6 +56,8 @@ export async function sendEmail(input: {
       to: input.to,
       subject: input.subject,
       html: input.html,
+      replyTo: input.replyTo,
+      attachments: input.attachments,
     });
     return true;
   } catch (err) {

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { CartSync } from "@/components/site/cart-sync";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteHeader } from "@/components/site/site-header";
+import { WhatsAppButton } from "@/components/site/whatsapp-button";
 import { env } from "@/env";
 import { defaultOpenGraph } from "@/lib/metadata";
 import { fontVariables } from "./fonts";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         {children}
         <SiteFooter />
+        <WhatsAppButton />
       </body>
     </html>
   );

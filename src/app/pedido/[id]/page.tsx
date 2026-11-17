@@ -10,6 +10,7 @@ import { buildOrderTimeline } from "@/lib/checkout/timeline";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { buildReturnNotice, type ReturnNotice } from "@/lib/payments/return-notice";
 import { getVerifiedReturnPayment } from "@/lib/payments/return-payment";
+import { trackingUrl } from "@/lib/shipping/tracking";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Seu pedido" };
@@ -53,7 +54,7 @@ export default async function OrderPage({ params, searchParams }: Params) {
   const { data: order } = await supabase
     .from("customer_order")
     .select(
-      "id, status, subtotal_cents, shipping_cents, total_cents, created_at, customer_name, customer_email, ship_cep, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state",
+      "id, status, subtotal_cents, shipping_cents, total_cents, tracking_code, created_at, customer_name, customer_email, ship_cep, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state",
     )
     .eq("id", id)
     .maybeSingle();
@@ -175,6 +176,16 @@ export default async function OrderPage({ params, searchParams }: Params) {
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {formatDateTime(step.at)}
                     </p>
+                  ) : null}
+                  {step.status === "shipped" && step.reached && order.tracking_code ? (
+                    <a
+                      href={trackingUrl(order.tracking_code)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-block text-sm font-medium text-primary hover:underline"
+                    >
+                      Rastrear entrega ({order.tracking_code}) ↗
+                    </a>
                   ) : null}
                 </div>
               </li>
