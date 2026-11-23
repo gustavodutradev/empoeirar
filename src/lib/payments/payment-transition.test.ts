@@ -193,3 +193,45 @@ describe('decidePaymentTransition — pedido em "pronto para envio"', () => {
     });
   });
 });
+
+describe("decidePaymentTransition — preço de Pix só com Pix", () => {
+  const pixOrder: OrderSnapshot = {
+    status: "pending_payment",
+    mpPaymentId: null,
+    totalCents: 10_000,
+    paymentMethod: "pix",
+  };
+  const approved = (method: "pix" | "card" | "other") => ({
+    id: "111",
+    status: "approved",
+    amountCents: 10_000,
+    method,
+  });
+
+  it("pedido Pix pago com Pix confirma", () => {
+    expect(decidePaymentTransition(pixOrder, approved("pix"))).toMatchObject({
+      action: "advance",
+      to: "paid",
+    });
+  });
+
+  it.each(["card", "other"] as const)("pedido Pix pago com %s não confirma e alerta", (method) => {
+    expect(decidePaymentTransition(pixOrder, approved(method))).toEqual({
+      action: "ignore",
+      reason: "method_mismatch",
+      alert: true,
+    });
+  });
+
+  it("pedido no cartão pago com Pix confirma (o valor é o do cartão)", () => {
+    expect(
+      decidePaymentTransition({ ...pixOrder, paymentMethod: "card" }, approved("pix")),
+    ).toMatchObject({ action: "advance", to: "paid" });
+  });
+
+  it("pedido antigo (sem forma escolhida) segue como antes", () => {
+    expect(
+      decidePaymentTransition({ ...pixOrder, paymentMethod: null }, approved("card")),
+    ).toMatchObject({ action: "advance", to: "paid" });
+  });
+});

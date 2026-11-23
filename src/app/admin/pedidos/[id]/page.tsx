@@ -6,6 +6,7 @@ import { AdminOrderTracking } from "@/components/site/admin-order-tracking";
 import { requireAdmin } from "@/lib/admin/guard";
 import { statusLabel } from "@/lib/checkout/status";
 import { formatBRL, formatDateTime } from "@/lib/format";
+import { PAYMENT_METHOD_LABEL, type PaymentMethod } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Admin · Pedido" };
 
@@ -115,7 +116,12 @@ export default async function AdminOrderDetail({ params }: Params) {
             ))}
           </ul>
           <div className="mt-3 flex justify-between border-t pt-3 text-sm font-medium">
-            <span>Total</span>
+            <span>
+              Total
+              {order.payment_method === "pix" || order.payment_method === "card"
+                ? ` (${PAYMENT_METHOD_LABEL[order.payment_method as PaymentMethod]})`
+                : ""}
+            </span>
             <span className="tabular-nums">{formatBRL(order.total_cents)}</span>
           </div>
         </section>

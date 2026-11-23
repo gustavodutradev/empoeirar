@@ -17,6 +17,7 @@ const base = {
     state: "mg",
   },
   items: [{ variantId: "0b0c3c1e-4f5a-4b6c-8d7e-9f0a1b2c3d4e", quantity: 2 }],
+  paymentMethod: "pix",
   acceptedTerms: true,
 };
 
@@ -61,5 +62,15 @@ describe("createOrderInputSchema", () => {
 describe("createOrderInputSchema — aceite dos termos", () => {
   it.each([false, undefined, "true", 1])("recusa pedido sem aceite (%j)", (acceptedTerms) => {
     expect(createOrderInputSchema.safeParse({ ...base, acceptedTerms }).success).toBe(false);
+  });
+});
+
+describe("createOrderInputSchema — forma de pagamento", () => {
+  it.each(["pix", "card"])("aceita %s", (paymentMethod) => {
+    expect(createOrderInputSchema.safeParse({ ...base, paymentMethod }).success).toBe(true);
+  });
+
+  it.each([undefined, "boleto", "PIX", ""])("recusa %j", (paymentMethod) => {
+    expect(createOrderInputSchema.safeParse({ ...base, paymentMethod }).success).toBe(false);
   });
 });

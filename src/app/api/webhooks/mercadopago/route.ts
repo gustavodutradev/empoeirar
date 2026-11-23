@@ -14,6 +14,8 @@ const ALERT_REASON_TEXT: Partial<Record<IgnoreReason, string>> = {
   duplicate_payment: "Cliente pagou duas vezes. Estornar um dos pagamentos no Mercado Pago.",
   paid_after_cancel: "Pagamento aprovado em pedido cancelado. Reativar o pedido ou estornar.",
   amount_mismatch: "Valor pago diferente do total do pedido. Pedido NAO foi confirmado.",
+  method_mismatch:
+    "Pedido com preco de Pix pago por outro meio. Pedido NAO foi confirmado: estornar ou combinar com o cliente.",
   in_mediation: "Cliente abriu disputa no Mercado Pago. Responder pelo painel do MP.",
   unknown_status: "Status de pagamento desconhecido. Conferir no painel do MP.",
 };
@@ -107,6 +109,7 @@ export async function POST(request: Request) {
       id: payment.id,
       status: payment.status,
       amountCents: payment.amountCents,
+      method: payment.method,
     };
 
     // Le -> decide -> grava com compare-and-set. Se outro webhook mudou o pedido
@@ -116,7 +119,7 @@ export async function POST(request: Request) {
     for (let attempt = 0; attempt < 2; attempt++) {
       const { data: order, error: orderError } = await admin
         .from("customer_order")
-        .select("id, status, total_cents, mp_payment_id")
+        .select("id, status, total_cents, mp_payment_id, payment_method")
         .eq("id", payment.externalReference)
         .maybeSingle();
       if (orderError) {
@@ -132,7 +135,15 @@ export async function POST(request: Request) {
       }
 
       const decision = decidePaymentTransition(
-        { status: order.status, mpPaymentId: order.mp_payment_id, totalCents: order.total_cents },
+        {
+          status: order.status,
+          mpPaymentId: order.mp_payment_id,
+          totalCents: order.total_cents,
+          paymentMethod:
+            order.payment_method === "pix" || order.payment_method === "card"
+              ? order.payment_method
+              : null,
+        },
         paymentSnapshot,
       );
 

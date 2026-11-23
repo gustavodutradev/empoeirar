@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { selectTotalCents, useCart, useHasHydrated } from "@/lib/cart/store";
+import { useCart, useHasHydrated } from "@/lib/cart/store";
 import { createOrder } from "@/lib/checkout/actions";
 import { checkoutFormSchema } from "@/lib/checkout/schema";
 import { formatBRL } from "@/lib/format";
+import { cartTotals, PAYMENT_METHOD_LABEL, type PaymentMethod, priceFor } from "@/lib/pricing";
 import { getFreightOptions } from "@/lib/shipping/actions";
 import { PRODUCTION_DAYS, READY_STOCK_NOTE, totalDeadlineLabel } from "@/lib/shipping/deadline";
 
@@ -55,7 +56,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const router = useRouter();
   const hydrated = useHasHydrated();
   const items = useCart((s) => s.items);
-  const subtotal = useCart(selectTotalCents);
+  const totals = cartTotals(items);
   const clear = useCart((s) => s.clear);
 
   const [form, setForm] = useState<Record<FieldName, string>>({
@@ -70,6 +71,8 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const [cepLoading, setCepLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Sem padrão de propósito: o preço muda com a forma, então o cliente escolhe.
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
 
   const [freight, setFreight] = useState<FreightOption[]>([]);
   const [freightId, setFreightId] = useState<number | null>(null);
@@ -77,7 +80,9 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
   const [freightMsg, setFreightMsg] = useState<string | null>(null);
 
   const selectedFreight = freight.find((f) => f.id === freightId) ?? null;
-  const total = subtotal + (selectedFreight?.priceCents ?? 0);
+  const freightCents = selectedFreight?.priceCents ?? 0;
+  const subtotal = paymentMethod === "card" ? totals.cardCents : totals.pixCents;
+  const total = subtotal + freightCents;
 
   function set(field: FieldName, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -152,6 +157,10 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
       setGeneralError("Escolha uma opção de frete.");
       return;
     }
+    if (!paymentMethod) {
+      setGeneralError("Escolha a forma de pagamento: Pix ou cartão.");
+      return;
+    }
     if (!acceptedTerms) {
       setGeneralError("Para continuar, aceite os termos de uso e a política de trocas.");
       return;
@@ -172,6 +181,7 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
       },
       items: items.map((i) => ({ variantId: i.variantId, quantity: i.quantity })),
       shippingServiceId: freightId ?? undefined,
+      paymentMethod,
       acceptedTerms,
     });
     setSubmitting(false);
@@ -330,7 +340,9 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
                 {item.quantity}× {item.productName}
                 <span className="block text-xs">{item.variantLabel}</span>
               </span>
-              <span className="tabular-nums">{formatBRL(item.priceCents * item.quantity)}</span>
+              <span className="tabular-nums">
+                {formatBRL(priceFor(item, paymentMethod ?? "pix") * item.quantity)}
+              </span>
             </li>
           ))}
         </ul>
@@ -380,8 +392,44 @@ export function CheckoutForm({ prefill }: { prefill: Prefill }) {
           )}
         </div>
 
+        <fieldset className="mt-4 border-t pt-4">
+          <legend className="pt-4 text-sm font-medium">Forma de pagamento</legend>
+          <div className="mt-2 flex flex-col gap-2">
+            {(["pix", "card"] as const).map((method) => {
+              const itemsCents = method === "pix" ? totals.pixCents : totals.cardCents;
+              return (
+                <label
+                  key={method}
+                  className={`flex cursor-pointer items-center justify-between gap-3 rounded-lg border p-3 text-sm ${
+                    paymentMethod === method ? "border-primary bg-secondary/50" : ""
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value={method}
+                      checked={paymentMethod === method}
+                      onChange={() => setPaymentMethod(method)}
+                      className="size-4 accent-primary"
+                    />
+                    <span className="font-medium">{PAYMENT_METHOD_LABEL[method]}</span>
+                  </span>
+                  <span className="tabular-nums">{formatBRL(itemsCents + freightCents)}</span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            O preço dos produtos muda conforme a forma. No Mercado Pago aparecem só as opções da
+            forma escolhida.
+          </p>
+        </fieldset>
+
         <div className="mt-4 flex justify-between border-t pt-4 text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
+          <span className="text-muted-foreground">
+            Subtotal{paymentMethod ? ` (${PAYMENT_METHOD_LABEL[paymentMethod]})` : " (Pix)"}
+          </span>
           <span className="tabular-nums">{formatBRL(subtotal)}</span>
         </div>
         {selectedFreight ? (

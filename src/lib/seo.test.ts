@@ -51,7 +51,7 @@ describe("summarize / productDescription", () => {
 
   it("sem descrição, gera uma com o preço mínimo", () => {
     expect(productDescription({ name: "Oval", description: null, minPriceCents: 4900 })).toBe(
-      "Oval: molde de madeira para cerâmica, feito à mão pela Empoeirar. A partir de R$\u00a049,00.",
+      "Oval: molde de madeira para cerâmica, feito à mão pela Empoeirar. A partir de R$\u00a049,00 no Pix.",
     );
   });
 });

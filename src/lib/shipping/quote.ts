@@ -23,7 +23,7 @@ export async function quoteFreight(cep: string, items: QuoteItem[]): Promise<Fre
   const ids = items.map((i) => i.variantId);
   const { data: variants } = await supabase
     .from("product_variant")
-    .select("id, weight_grams, length_mm, width_mm, height_mm, price_cents")
+    .select("id, weight_grams, length_mm, width_mm, height_mm, price_card_cents")
     .in("id", ids);
 
   if (!variants || variants.length === 0) return [];
@@ -39,7 +39,8 @@ export async function quoteFreight(cep: string, items: QuoteItem[]): Promise<Fre
       lengthMm: v?.length_mm ?? null,
       widthMm: v?.width_mm ?? null,
       heightMm: v?.height_mm ?? null,
-      priceCents: v?.price_cents ?? 0,
+      // Valor declarado para o seguro do frete: o do cartão (o maior).
+      priceCents: v?.price_card_cents ?? 0,
       quantity: i.quantity,
     };
   });

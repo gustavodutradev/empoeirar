@@ -58,7 +58,8 @@ export type Category = {
 export type ProductVariant = {
   id: string;
   label: string;
-  price_cents: number;
+  price_pix_cents: number;
+  price_card_cents: number;
   weight_grams: number | null;
   length_mm: number | null;
   width_mm: number | null;
@@ -85,7 +86,10 @@ export type ProductWithVariants = {
 export type ProductListItem = {
   name: string;
   slug: string;
+  /** Menor preço no Pix entre as variantes. */
   priceFromCents: number;
+  /** Menor preço no cartão entre as variantes. */
+  cardFromCents: number;
   hasOptions: boolean;
   image?: string;
 };
@@ -147,7 +151,12 @@ export async function getCategoryPreviews(): Promise<Record<string, string>> {
   return out;
 }
 
-type ListRow = { id: string; name: string; slug: string; variants: { price_cents: number }[] };
+type ListRow = {
+  id: string;
+  name: string;
+  slug: string;
+  variants: { price_pix_cents: number; price_card_cents: number }[];
+};
 
 export async function getProducts(categorySlug?: string): Promise<ProductListItem[]> {
   const supabase = await createClient();
@@ -166,7 +175,7 @@ export async function getProducts(categorySlug?: string): Promise<ProductListIte
 
   const base = supabase
     .from("product")
-    .select("id, name, slug, variants:product_variant(price_cents)")
+    .select("id, name, slug, variants:product_variant(price_pix_cents, price_card_cents)")
     .eq("status", "published");
 
   const { data, error } = categoryId
@@ -184,7 +193,8 @@ export async function getProducts(categorySlug?: string): Promise<ProductListIte
   return valid.map((r) => ({
     name: r.name,
     slug: r.slug,
-    priceFromCents: Math.min(...r.variants.map((v) => v.price_cents)),
+    priceFromCents: Math.min(...r.variants.map((v) => v.price_pix_cents)),
+    cardFromCents: Math.min(...r.variants.map((v) => v.price_card_cents)),
     hasOptions: r.variants.length > 1,
     image: imgs.get(r.id)?.[0],
   }));

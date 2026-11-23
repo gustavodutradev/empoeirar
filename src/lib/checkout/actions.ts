@@ -45,7 +45,7 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
-  const { customer, address, items, shippingServiceId } = parsed.data;
+  const { customer, address, items, shippingServiceId, paymentMethod } = parsed.data;
 
   // Frete: se o cliente escolheu um serviço, RECALCULAMOS aqui (nunca confiamos
   // no preço que veio do cliente).
@@ -94,6 +94,7 @@ export async function createOrder(input: unknown): Promise<CreateOrderResult> {
       city: address.city,
       state: address.state,
     },
+    p_payment_method: paymentMethod,
     p_shipping_cents: shippingCents,
     p_shipping_service: shippingService,
   });

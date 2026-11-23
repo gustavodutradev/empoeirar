@@ -43,8 +43,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-function minPrice(variants: { price_cents: number }[]): number | null {
-  const prices = variants.map((v) => v.price_cents).filter((c) => c > 0);
+/** Menor preço (no Pix), para a descrição do Google e da prévia. */
+function minPrice(variants: { price_pix_cents: number }[]): number | null {
+  const prices = variants.map((v) => v.price_pix_cents).filter((c) => c > 0);
   return prices.length > 0 ? Math.min(...prices) : null;
 }
 
@@ -63,7 +64,12 @@ export default async function ProductPage({ params }: Params) {
       description: product.description,
       url: absoluteUrl(env.NEXT_PUBLIC_SITE_URL, `/produtos/${product.slug}`),
       images,
-      variants: product.variants,
+      // Preço do Google = preço no Pix (o menor, válido para qualquer cliente).
+      variants: product.variants.map((v) => ({
+        id: v.id,
+        label: v.label,
+        price_cents: v.price_pix_cents,
+      })),
     },
     siteConfig.name,
   );

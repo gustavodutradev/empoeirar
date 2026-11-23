@@ -57,6 +57,9 @@ export const createOrderInputSchema = z.object({
   shippingServiceId: z.number().int().optional(),
   // Aceite dos termos e da política de trocas, conferido também no servidor
   // (um checkbox só no navegador seria fácil de pular).
+  // Forma de pagamento: define o preço dos itens (Pix ou cartão) e quais
+  // meios o Mercado Pago oferece. O preço em si sai do banco.
+  paymentMethod: z.enum(["pix", "card"], "Escolha a forma de pagamento: Pix ou cartão."),
   acceptedTerms: z.literal(true, "Para continuar, aceite os termos de uso e a política de trocas."),
 });
 
