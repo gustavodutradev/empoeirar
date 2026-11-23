@@ -66,7 +66,7 @@ export function productDescription(p: {
   if (p.description?.trim()) return summarize(p.description);
   const price =
     p.minPriceCents && p.minPriceCents > 0
-      ? ` A partir de ${brl.format(p.minPriceCents / 100)}.`
+      ? ` A partir de ${brl.format(p.minPriceCents / 100)} no Pix.`
       : "";
   return `${p.name}: molde de madeira para cerâmica, feito à mão pela Empoeirar.${price}`;
 }

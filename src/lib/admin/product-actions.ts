@@ -78,7 +78,8 @@ export async function saveProduct(input: unknown): Promise<Result> {
   for (const v of p.variants) {
     const fields = {
       label: v.label,
-      price_cents: v.price_cents,
+      price_pix_cents: v.price_pix_cents,
+      price_card_cents: v.price_card_cents,
       weight_grams: v.weight_grams,
       length_mm: v.length_mm,
       width_mm: v.width_mm,
@@ -139,7 +140,8 @@ export async function createProduct(input: unknown): Promise<CreateResult> {
     p_category_id: p.category_id,
     p_variants: p.variants.map((v, i) => ({
       label: v.label,
-      price_cents: v.price_cents,
+      price_pix_cents: v.price_pix_cents,
+      price_card_cents: v.price_card_cents,
       weight_grams: v.weight_grams,
       length_mm: v.length_mm,
       width_mm: v.width_mm,

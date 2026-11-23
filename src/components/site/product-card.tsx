@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { DualPrice } from "@/components/site/dual-price";
 import { ProductImage } from "@/components/site/product-image";
-import { formatBRL } from "@/lib/format";
 
 export function ProductCard({
   product,
@@ -9,6 +9,7 @@ export function ProductCard({
     name: string;
     slug: string;
     priceFromCents: number;
+    cardFromCents: number;
     hasOptions: boolean;
     image?: string;
   };
@@ -30,10 +31,12 @@ export function ProductCard({
         <h3 className="font-display text-base leading-snug text-primary group-hover:underline sm:text-lg">
           {product.name}
         </h3>
-        <span className="text-base text-muted-foreground">
-          {product.hasOptions ? "a partir de " : ""}
-          {formatBRL(product.priceFromCents)}
-        </span>
+        <DualPrice
+          size="sm"
+          prefix={product.hasOptions ? "a partir de" : undefined}
+          pixCents={product.priceFromCents}
+          cardCents={product.cardFromCents}
+        />
       </div>
     </Link>
   );

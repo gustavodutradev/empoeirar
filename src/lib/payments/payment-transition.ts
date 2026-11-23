@@ -20,13 +20,16 @@ import { type OrderStatus, PAID_STATUSES } from "@/lib/checkout/status";
  *     pagar de novo.
  *  3. Estorno/chargeback só cancela o pedido se for do pagamento que PAGOU o
  *     pedido (customer_order.mp_payment_id).
- *  4. O que precisa de gente (pagamento duplicado, pago depois de cancelado,
- *     disputa, valor divergente) é ignorado com `alert: true`, para o webhook
+ *  4. Pedido feito com preço de Pix só é confirmado por pagamento Pix.
+ *  5. O que precisa de gente (pagamento duplicado, pago depois de cancelado,
+ *     disputa, valor ou meio divergente) é ignorado com `alert: true`, para o webhook
  *     registrar como erro e alguém resolver à mão.
  */
 
 export type OrderSnapshot = {
   status: string;
+  /** Forma escolhida no checkout; null em pedido anterior aos preços Pix/cartão. */
+  paymentMethod?: "pix" | "card" | null;
   /** Pagamento que confirmou o pedido; null enquanto não foi pago. */
   mpPaymentId: string | null;
   totalCents: number;
@@ -35,6 +38,7 @@ export type OrderSnapshot = {
 export type PaymentSnapshot = {
   id: string;
   status: string;
+  method?: "pix" | "card" | "other";
   amountCents: number;
 };
 
@@ -47,6 +51,7 @@ export type IgnoreReason =
   | "duplicate_payment"
   | "paid_after_cancel"
   | "amount_mismatch"
+  | "method_mismatch"
   | "in_mediation"
   | "unknown_status";
 
@@ -75,6 +80,12 @@ export function decidePaymentTransition(
       if (order.status === "pending_payment") {
         // Impede que um pagamento menor "confirme" um pedido mais caro.
         if (payment.amountCents !== order.totalCents) return ignore("amount_mismatch", true);
+        // Pedido com preço de Pix pago por outro meio (o MP só oferece Pix, mas
+        // a trava de verdade é aqui): o valor bate, mas o Jane receberia o preço
+        // de Pix pagando a taxa do cartão. Não confirma; alguém resolve à mão.
+        if (order.paymentMethod === "pix" && payment.method !== "pix") {
+          return ignore("method_mismatch", true);
+        }
         return {
           action: "advance",
           to: "paid",

@@ -11,7 +11,13 @@ import { getProductImages, productImageUrl } from "@/lib/product-images";
  */
 
 type Row = { variant_id: string; quantity: number };
-type Var = { id: string; label: string; price_cents: number; product_id: string };
+type Var = {
+  id: string;
+  label: string;
+  price_pix_cents: number;
+  price_card_cents: number;
+  product_id: string;
+};
 type Prod = { id: string; name: string; slug: string };
 
 /** Lê o carrinho do usuário do banco e monta CartItems prontos para o store. */
@@ -23,7 +29,7 @@ export async function fetchServerCart(supabase: SupabaseClient): Promise<CartIte
   const variantIds = cartRows.map((r) => r.variant_id);
   const { data: varsData } = await supabase
     .from("product_variant")
-    .select("id, label, price_cents, product_id")
+    .select("id, label, price_pix_cents, price_card_cents, product_id")
     .in("id", variantIds);
   const vars = (varsData ?? []) as Var[];
 
@@ -59,7 +65,8 @@ export async function fetchServerCart(supabase: SupabaseClient): Promise<CartIte
     out.push({
       variantId: r.variant_id,
       quantity: r.quantity,
-      priceCents: v.price_cents,
+      pixPriceCents: v.price_pix_cents,
+      cardPriceCents: v.price_card_cents,
       variantLabel: sizeLabel(v.label),
       productName: p.name,
       productSlug: p.slug,

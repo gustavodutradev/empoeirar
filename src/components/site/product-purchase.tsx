@@ -2,6 +2,7 @@
 
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
+import { DualPrice } from "@/components/site/dual-price";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/lib/cart/store";
 import { formatBRL, mmToCm, sizeLabel } from "@/lib/format";
@@ -41,7 +42,8 @@ export function ProductPurchase({
         productSlug,
         productName,
         variantLabel: sizeLabel(selected.label),
-        priceCents: selected.price_cents,
+        pixPriceCents: selected.price_pix_cents,
+        cardPriceCents: selected.price_card_cents,
         image,
       },
       quantity,
@@ -62,7 +64,11 @@ export function ProductPurchase({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-3xl text-foreground">{formatBRL(selected.price_cents)}</p>
+      <DualPrice
+        size="lg"
+        pixCents={selected.price_pix_cents}
+        cardCents={selected.price_card_cents}
+      />
 
       {hasOptions ? (
         <fieldset className="flex flex-col gap-2">
@@ -91,7 +97,7 @@ export function ProductPurchase({
                   <span
                     className={cn(active ? "text-primary-foreground/80" : "text-muted-foreground")}
                   >
-                    {formatBRL(variant.price_cents)}
+                    {formatBRL(variant.price_pix_cents)} no Pix
                     {vDims ? ` · ${vDims}` : ""}
                   </span>
                 </button>

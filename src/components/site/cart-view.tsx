@@ -3,10 +3,12 @@
 import { Minus, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DualPrice } from "@/components/site/dual-price";
 import { ProductImage } from "@/components/site/product-image";
 import { Button } from "@/components/ui/button";
-import { selectTotalCents, useCart, useHasHydrated } from "@/lib/cart/store";
+import { useCart, useHasHydrated } from "@/lib/cart/store";
 import { formatBRL, mmToCm, sizeLabel } from "@/lib/format";
+import { cartTotals } from "@/lib/pricing";
 import { createClient } from "@/lib/supabase/client";
 
 type VariantRow = {
@@ -40,7 +42,9 @@ const isConjunto = (label: string) => label.trim().toLowerCase().startsWith("con
 export function CartView() {
   const hydrated = useHasHydrated();
   const items = useCart((s) => s.items);
-  const total = useCart(selectTotalCents);
+  // Totais calculados do array (e não num seletor que devolve objeto novo a
+  // cada leitura, o que faria o zustand re-renderizar sem parar).
+  const totals = cartTotals(items);
   const setQuantity = useCart((s) => s.setQuantity);
   const removeItem = useCart((s) => s.removeItem);
   const clear = useCart((s) => s.clear);
@@ -143,9 +147,12 @@ export function CartView() {
                   >
                     {item.productName}
                   </Link>
-                  <span className="shrink-0 font-medium tabular-nums">
-                    {formatBRL(item.priceCents * item.quantity)}
-                  </span>
+                  <DualPrice
+                    size="sm"
+                    className="shrink-0 items-end text-right font-medium"
+                    pixCents={item.pixPriceCents * item.quantity}
+                    cardCents={item.cardPriceCents * item.quantity}
+                  />
                 </div>
                 <span className="text-base text-muted-foreground">{item.variantLabel}</span>
 
@@ -166,10 +173,12 @@ export function CartView() {
                   <span className="text-sm text-muted-foreground">{detail.dims}</span>
                 ) : null}
 
-                <span className="mt-1 text-base tabular-nums">
-                  {formatBRL(item.priceCents)}
-                  {item.quantity > 1 ? <span className="text-muted-foreground"> cada</span> : null}
-                </span>
+                {item.quantity > 1 ? (
+                  <span className="mt-1 text-sm tabular-nums text-muted-foreground">
+                    {formatBRL(item.pixPriceCents)} no Pix ou {formatBRL(item.cardPriceCents)} no
+                    cartão, cada
+                  </span>
+                ) : null}
 
                 <div className="mt-2 flex items-center justify-between gap-4 sm:justify-start">
                   <div className="flex items-center rounded-lg border">
@@ -213,11 +222,15 @@ export function CartView() {
       <aside className="w-full shrink-0 rounded-xl border bg-card p-5 sm:p-6 lg:sticky lg:top-24 lg:w-80">
         <h2 className="font-display text-xl text-primary">Resumo</h2>
         <div className="mt-4 flex justify-between text-base">
-          <span className="text-muted-foreground">Subtotal</span>
-          <span className="font-medium tabular-nums">{formatBRL(total)}</span>
+          <span className="text-muted-foreground">Subtotal no Pix</span>
+          <span className="font-medium tabular-nums">{formatBRL(totals.pixCents)}</span>
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          O frete é calculado no checkout, conforme o CEP.
+        <div className="mt-1 flex justify-between text-base">
+          <span className="text-muted-foreground">Subtotal no cartão</span>
+          <span className="font-medium tabular-nums">{formatBRL(totals.cardCents)}</span>
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Você escolhe Pix ou cartão no checkout. O frete é calculado lá, conforme o CEP.
         </p>
 
         <Button asChild size="lg" className="mt-6 w-full text-base">

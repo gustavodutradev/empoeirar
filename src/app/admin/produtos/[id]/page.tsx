@@ -25,7 +25,9 @@ export default async function AdminProductEdit({ params }: Params) {
   const [{ data: variants }, { data: categories }, { data: imageRows }] = await Promise.all([
     supabase
       .from("product_variant")
-      .select("id, label, price_cents, weight_grams, length_mm, width_mm, height_mm, sort_order")
+      .select(
+        "id, label, price_pix_cents, price_card_cents, weight_grams, length_mm, width_mm, height_mm, sort_order",
+      )
       .eq("product_id", id)
       .order("sort_order"),
     supabase.from("category").select("id, name").order("name"),
@@ -58,7 +60,12 @@ export default async function AdminProductEdit({ params }: Params) {
 
       <div className="mt-6 flex flex-col gap-8">
         <AdminProductImages productId={product.id} images={images} />
+        {/* key com os ids das variantes: depois de salvar, o router.refresh traz
+            as variantes novas JÁ com id, e o formulário é remontado com elas. Sem
+            isso, a linha nova continuava sem id e um segundo "Salvar" criava a
+            mesma variante de novo (foi o que duplicou Copo e Prato de Risoto). */}
         <AdminProductForm
+          key={(variants ?? []).map((v) => v.id).join(",")}
           product={product}
           variants={variants ?? []}
           categories={categories ?? []}

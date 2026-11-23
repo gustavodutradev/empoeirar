@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { createProduct, deleteVariant, saveProduct } from "@/lib/admin/product-actions";
+import { centsToInput, inputToCents } from "@/lib/money";
 
 type Product = {
   id: string;
@@ -17,7 +18,8 @@ type Product = {
 type Variant = {
   id: string;
   label: string;
-  price_cents: number;
+  price_pix_cents: number;
+  price_card_cents: number;
   weight_grams: number | null;
   length_mm: number | null;
   width_mm: number | null;
@@ -29,7 +31,8 @@ type Category = { id: string; name: string };
 type Row = {
   id?: string;
   label: string;
-  price: string; // em reais, string de input
+  pricePix: string; // em reais, string de input
+  priceCard: string; // em reais, string de input
   weight: string; // gramas
   length: string; // mm
   width: string; // mm
@@ -47,7 +50,8 @@ function toRow(v: Variant): Row {
   return {
     id: v.id,
     label: v.label,
-    price: (v.price_cents / 100).toFixed(2),
+    pricePix: centsToInput(v.price_pix_cents),
+    priceCard: centsToInput(v.price_card_cents),
     weight: v.weight_grams?.toString() ?? "",
     length: v.length_mm?.toString() ?? "",
     width: v.width_mm?.toString() ?? "",
@@ -55,7 +59,15 @@ function toRow(v: Variant): Row {
   };
 }
 
-const EMPTY_ROW: Row = { label: "", price: "0.00", weight: "", length: "", width: "", height: "" };
+const EMPTY_ROW: Row = {
+  label: "",
+  pricePix: "",
+  priceCard: "",
+  weight: "",
+  length: "",
+  width: "",
+  height: "",
+};
 
 /**
  * Formulário duplo: EDITA um produto (quando `product` é passado) ou CRIA um
@@ -118,10 +130,23 @@ export function AdminProductForm({
     setSaving(true);
     setMessage(null);
 
+    const invalid = rows.findIndex(
+      (r) => inputToCents(r.pricePix) === null || inputToCents(r.priceCard) === null,
+    );
+    if (invalid !== -1) {
+      setSaving(false);
+      setMessage({
+        ok: false,
+        text: `Variante ${invalid + 1}: preencha o Valor Pix e o Valor Cartão (ex.: 149,00).`,
+      });
+      return;
+    }
+
     const variantsPayload = rows.map((r, i) => ({
       id: r.id,
       label: r.label.trim(),
-      price_cents: Math.round(Number(r.price.replace(",", ".") || "0") * 100) || 0,
+      price_pix_cents: inputToCents(r.pricePix) ?? 0,
+      price_card_cents: inputToCents(r.priceCard) ?? 0,
       weight_grams: intOrNull(r.weight),
       length_mm: intOrNull(r.length),
       width_mm: intOrNull(r.width),
@@ -252,8 +277,8 @@ export function AdminProductForm({
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Preço em reais, peso em gramas, dimensões em milímetros. O peso alimenta o cálculo de
-          frete — preencha para o frete ficar preciso.
+          Valores em reais (Pix e cartão; o Pix não pode ser maior), peso em gramas, dimensões em
+          milímetros. O peso alimenta o cálculo de frete — preencha para o frete ficar preciso.
           {!isEdit ? " A primeira variante é a pré-selecionada na página do produto." : ""}
         </p>
 
@@ -272,16 +297,22 @@ export function AdminProductForm({
                   </button>
                 </div>
               ) : null}
-              <div className="grid gap-2 sm:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr]">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_1fr_1fr]">
                 <LabeledInput
                   label="Rótulo"
                   value={row.label}
                   onChange={(v) => setRow(i, { label: v })}
                 />
                 <LabeledInput
-                  label="Preço R$"
-                  value={row.price}
-                  onChange={(v) => setRow(i, { price: v })}
+                  label="Valor Pix (R$)"
+                  value={row.pricePix}
+                  onChange={(v) => setRow(i, { pricePix: v })}
+                  inputMode="decimal"
+                />
+                <LabeledInput
+                  label="Valor Cartão (R$)"
+                  value={row.priceCard}
+                  onChange={(v) => setRow(i, { priceCard: v })}
                   inputMode="decimal"
                 />
                 <LabeledInput

@@ -1,6 +1,11 @@
 import "server-only";
 import { env } from "@/env";
 import { toMercadoPagoDate } from "@/lib/checkout/expiration";
+import {
+  EXCLUDED_PAYMENT_TYPES,
+  type PaymentMethodKind,
+  paymentMethodKind,
+} from "@/lib/payments/payment-method";
 
 /**
  * Cliente do Mercado Pago (REST, via fetch — sem SDK, sem dependencia extra).
@@ -40,6 +45,8 @@ export type CreatePreferenceInput = {
    * pagamento e Pix/boleto gerados por ele vencem.
    */
   expiresAt: Date;
+  /** Forma escolhida no checkout. null = pedido antigo: oferece todos os meios. */
+  paymentMethod: "pix" | "card" | null;
 };
 
 /**
@@ -92,6 +99,15 @@ export async function createPreference(
       expiration_date_from: toMercadoPagoDate(new Date()),
       expiration_date_to: toMercadoPagoDate(input.expiresAt),
       date_of_expiration: toMercadoPagoDate(input.expiresAt),
+      // O preço do pedido depende da forma escolhida no checkout: o MP só
+      // oferece os meios dela (Pix -> só Pix; cartão -> sem Pix e sem boleto).
+      payment_methods: input.paymentMethod
+        ? {
+            excluded_payment_types: EXCLUDED_PAYMENT_TYPES[input.paymentMethod].map((id) => ({
+              id,
+            })),
+          }
+        : undefined,
       // notification_url NAO vai aqui de proposito: a URL do webhook e a do
       // painel do MP (fonte unica). URL na preferencia sobrescreveria a do
       // painel silenciosamente.
@@ -109,6 +125,7 @@ export async function createPreference(
 export type MpPayment = {
   id: string;
   status: string;
+  method: PaymentMethodKind;
   /** Motivo detalhado (ex.: cc_rejected_insufficient_amount, pending_waiting_transfer). */
   statusDetail: string | null;
   externalReference: string | null;
@@ -141,10 +158,13 @@ export async function getPayment(paymentId: string): Promise<MpPayment | null> {
     status_detail?: string | null;
     external_reference: string | null;
     transaction_amount: number | null;
+    payment_method_id?: string | null;
+    payment_type_id?: string | null;
   };
   return {
     id: String(data.id),
     status: data.status,
+    method: paymentMethodKind(data.payment_method_id, data.payment_type_id),
     statusDetail: data.status_detail ?? null,
     externalReference: data.external_reference,
     // Valor em centavos, para cross-check com o total do pedido.

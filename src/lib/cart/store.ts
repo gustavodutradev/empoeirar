@@ -34,7 +34,9 @@ export type CartItem = {
   productSlug: string;
   productName: string;
   variantLabel: string;
-  priceCents: number;
+  /** Preços só para exibir: o pedido é sempre recalculado no banco. */
+  pixPriceCents: number;
+  cardPriceCents: number;
   image?: string;
   quantity: number;
 };
@@ -82,15 +84,37 @@ export const useCart = create<CartState>()(
     }),
     {
       name: "empoeirar-cart",
-      version: 1,
+      // v2: preço único -> preço no Pix e no cartão. Itens antigos ficam com o
+      // mesmo valor nos dois até a próxima sincronização com o banco.
+      version: 2,
+      migrate: (persisted, version) => migrateCart(persisted, version),
       storage: createJSONStorage(() => clientStorage),
     },
   ),
 );
 
 export const selectCount = (s: CartState) => s.items.reduce((n, i) => n + i.quantity, 0);
-export const selectTotalCents = (s: CartState) =>
-  s.items.reduce((sum, i) => sum + i.priceCents * i.quantity, 0);
+
+/**
+ * Carrinho salvo por uma versão anterior do site. v1 tinha só `priceCents`.
+ * Exportada para teste.
+ */
+export function migrateCart(
+  persisted: unknown,
+  version: number,
+): Pick<CartState, "items" | "ownerId"> {
+  const state = (persisted ?? {}) as { items?: unknown[]; ownerId?: string | null };
+  const items = Array.isArray(state.items) ? state.items : [];
+  if (version >= 2) return { items: items as CartItem[], ownerId: state.ownerId ?? null };
+  return {
+    ownerId: state.ownerId ?? null,
+    items: items.map((raw) => {
+      const { priceCents, ...rest } = raw as CartItem & { priceCents?: number };
+      const price = typeof priceCents === "number" ? priceCents : 0;
+      return { ...rest, pixPriceCents: price, cardPriceCents: price };
+    }),
+  };
+}
 
 /**
  * Evita mismatch de hidratacao: o servidor renderiza sem localStorage, entao

@@ -10,6 +10,7 @@ import { buildOrderTimeline } from "@/lib/checkout/timeline";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { buildReturnNotice, type ReturnNotice } from "@/lib/payments/return-notice";
 import { getVerifiedReturnPayment } from "@/lib/payments/return-payment";
+import { PAYMENT_METHOD_LABEL, type PaymentMethod } from "@/lib/pricing";
 import { trackingUrl } from "@/lib/shipping/tracking";
 import { createClient } from "@/lib/supabase/server";
 
@@ -54,7 +55,7 @@ export default async function OrderPage({ params, searchParams }: Params) {
   const { data: order } = await supabase
     .from("customer_order")
     .select(
-      "id, status, subtotal_cents, shipping_cents, total_cents, tracking_code, created_at, customer_name, customer_email, ship_cep, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state",
+      "id, status, payment_method, subtotal_cents, shipping_cents, total_cents, tracking_code, created_at, customer_name, customer_email, ship_cep, ship_street, ship_number, ship_complement, ship_district, ship_city, ship_state",
     )
     .eq("id", id)
     .maybeSingle();
@@ -233,7 +234,12 @@ export default async function OrderPage({ params, searchParams }: Params) {
             </span>
           </div>
           <div className="flex justify-between text-base font-medium">
-            <span>Total</span>
+            <span>
+              Total
+              {order.payment_method === "pix" || order.payment_method === "card"
+                ? ` (${PAYMENT_METHOD_LABEL[order.payment_method as PaymentMethod]})`
+                : ""}
+            </span>
             <span className="tabular-nums">{formatBRL(order.total_cents)}</span>
           </div>
         </div>
